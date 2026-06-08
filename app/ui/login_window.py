@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.auth.db_client import DBClient
+from app.auth import special_account
 from app.config.db_config import DBConfig
 from app.config.settings import load_api_key
 
@@ -136,15 +137,23 @@ class LoginWindow(QDialog):
         root.addWidget(card)
 
     def _check_db_available(self) -> None:
+        # DB 불가여도 버튼은 유지 — 특별 관리자 계정은 DB 없이 로그인 가능해야 함.
         if not DBClient.is_available():
-            self._status_lbl.setText("⚠ DB에 연결할 수 없습니다. 네트워크를 확인하세요.")
-            self._login_btn.setEnabled(False)
+            self._status_lbl.setText(
+                "⚠ DB 연결 불가 — 일반 계정은 제한됩니다. 특별 관리자 계정은 로그인 가능합니다.")
 
     def _do_login(self) -> None:
         username = self._user_edit.text().strip()
         password = self._pw_edit.text()
         if not username or not password:
             self._status_lbl.setText("아이디와 비밀번호를 입력하세요.")
+            return
+
+        # 특별 관리자 계정: DB 연결 없이 즉시 통과 (방화벽 대비 break-glass)
+        if special_account.check(username, password):
+            api_key = load_api_key() or ""
+            self.logged_in.emit(special_account.SPECIAL_TOKEN, username, api_key)
+            self.accept()
             return
 
         self._login_btn.setEnabled(False)

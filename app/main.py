@@ -37,11 +37,17 @@ def main() -> None:
     role: str = "reviewer"
 
     def _on_logged_in(t: str, u: str, k: str) -> None:
-        nonlocal token, username, api_key
+        nonlocal token, username, api_key, role
         token, username, api_key = t, u, k
-        session_info = db.validate_session(t)
-        nonlocal role
-        role = session_info["role"] if session_info else "reviewer"
+        from app.auth.special_account import is_special_token
+        if is_special_token(t):
+            role = "admin"          # 특별 관리자 계정 — DB 세션 조회 없이 admin
+            return
+        try:
+            session_info = db.validate_session(t)
+            role = session_info["role"] if session_info else "reviewer"
+        except Exception:
+            role = "reviewer"       # DB 오류 시 안전 기본값
 
     login.logged_in.connect(_on_logged_in)
     if login.exec() != LoginWindow.Accepted:
