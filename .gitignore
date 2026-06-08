@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+desktop.ini
+
+# Playwright (browser binaries are large)
+playwright-browsers/
+.playwright/
+
+# Build artifacts (PyInstaller, Inno Setup)
+build/
+dist/
+installer/output/
+# Keep installer .spec (source file); only exclude PyInstaller intermediate cache
+*.spec.bak
+
+# Runtime data (per-run output, regenerable)
+data/runs/
+data/llm_cache/
+data/prompts/
+
+# Local config (API keys, DB credentials)
+app/config/secrets.json
+app/config/local_settings.py
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Excel temp lock files
+~$*.xlsx
+~$*.xls
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# But keep PoC outputs (they're work products to commit)
+!data/poc/
+
+# 외부 소스 (git clone으로 별도 관리)
+data/oss/gnuboard5/app/
+
+# Claude Code 로컬 세션/설정 (PC별 로컬, 공유 불필요)
+.claude/

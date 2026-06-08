@@ -1,0 +1,36 @@
+# domain-invariants/USER_AUTH.yaml
+# 회원/인증 기능에 적용되는 불변 규칙
+# 생성: AI (gnuboard5 매뉴얼 + PoC-γ 분석에서 추출)
+# 승인: jh910 (2026-05-19)
+
+- name: password_empty_rejection
+  statement: "비밀번호 필드가 비어있으면 로그인·회원가입을 거부하고 오류 메시지를 표시해야 한다"
+  appliesTo: [AUTH, CREATE]
+  verification: "비밀번호 빈칸 제출 시 '비밀번호를 입력하세요' 메시지 표시"
+  severity_on_violation: MINOR
+  source: "DEF-2026-BRD-004 (PoC-γ BUG-4)"
+  status: approved
+
+- name: invalid_credential_rejection
+  statement: "존재하지 않는 아이디 또는 잘못된 비밀번호 입력 시 로그인을 거부해야 한다"
+  appliesTo: [AUTH]
+  verification: "잘못된 자격증명으로 로그인 시도 시 오류 메시지 표시 및 세션 미생성"
+  severity_on_violation: CRITICAL
+  source: "gnuboard5_spec.md §1.2"
+  status: approved
+
+- name: logout_clears_session
+  statement: "로그아웃 후에는 인증이 필요한 기능(글쓰기, 수정, 삭제)에 접근할 수 없어야 한다"
+  appliesTo: [AUTH]
+  verification: "로그아웃 후 글쓰기 버튼 미노출, 수정·삭제 요청 거부 확인"
+  severity_on_violation: CRITICAL
+  source: "gnuboard5_spec.md §1.3"
+  status: approved
+
+- name: session_reflected_in_ui
+  statement: "로그인 상태는 UI에 즉시 반영되어야 한다 (글쓰기 버튼 노출 등)"
+  appliesTo: [AUTH]
+  verification: "로그인 성공 후 즉시 로그인 전용 UI 요소(글쓰기 버튼 등) 표시"
+  severity_on_violation: MAJOR
+  source: "gnuboard5_spec.md §1.1"
+  status: approved

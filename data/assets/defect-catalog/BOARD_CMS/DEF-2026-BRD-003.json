@@ -1,0 +1,58 @@
+{
+  "defectId": "DEF-2026-BRD-003",
+  "projectId": "POC-GNUBOARD5-2026",
+  "discoveredAt": "2026-05-19T00:00:00+09:00",
+  "product": {
+    "productTypeId": "BOARD_CMS",
+    "techStack": ["PHP", "MySQL", "JavaScript"],
+    "scale": "MEDIUM"
+  },
+  "feature": {
+    "featureType": "PAGINATION",
+    "screenLocation": "/board/list",
+    "triggeringAction": "page=999 파라미터로 목록 요청"
+  },
+  "title": "유효 범위 초과 페이지 번호 접근 시 빈 화면 표시",
+  "description": "페이지 번호가 전체 페이지 수를 초과할 경우 fallback 없이 빈 목록이 표시됨. 사용자가 빈 화면을 마주치게 됨.",
+  "observedBehavior": "page=999 접근 시 글 목록이 비어있는 테이블만 표시됨.",
+  "expectedBehavior": "범위 초과 페이지 접근 시 마지막 페이지로 자동 이동하거나 '존재하지 않는 페이지' 안내 메시지 표시.",
+  "iso25023Mapping": {
+    "characteristic": "신뢰성",
+    "subcharacteristic": "결함 허용성"
+  },
+  "severity": "MAJOR",
+  "defectCategory": "BOUNDARY",
+  "detection": {
+    "method": "AUTO_TC",
+    "detectingTcId": "TC-006-003",
+    "timeToDetectMin": 1
+  },
+  "rootCause": {
+    "category": "FRONTEND",
+    "whatWasMissed": "viewList()에 page > maxPage clamp 로직 없음"
+  },
+  "learning": {
+    "patternProposal": {
+      "name": "PAGINATION_BOUNDARY_FALLBACK",
+      "description": "범위 초과 페이지 번호는 최종 페이지로 fallback해야 한다",
+      "appliesTo": ["READ", "PAGINATION"],
+      "checks": [
+        "최대 페이지 + 1 접근 시 최대 페이지로 리다이렉트 또는 안내 메시지가 표시되는가",
+        "page=0 또는 음수 접근 시 첫 번째 페이지로 처리되는가",
+        "page=999999 같은 극단값 접근 시 서버 오류 없이 처리되는가"
+      ],
+      "generatedBy": "AI",
+      "status": "approved"
+    }
+  },
+  "tags": ["페이지네이션", "경계처리", "fallback"],
+  "status": "RESOLVED",
+  "resolution": "viewList()에 Math.min(page, maxPage) 처리 추가",
+  "_meta": {
+    "createdBy": "jh910",
+    "createdAt": "2026-05-19T00:00:00+09:00",
+    "patternGeneratedBy": "AI",
+    "patternApprovedBy": "jh910",
+    "patternApprovedAt": "2026-05-19T00:00:00+09:00"
+  }
+}

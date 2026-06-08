@@ -1,0 +1,49 @@
+{
+  "defectId": "DEF-2026-BRD-007",
+  "projectId": "RUN-c38e532c",
+  "discoveredAt": "2026-06-04T05:01:47.951286+00:00",
+  "product": {
+    "productTypeId": "BOARD_CMS",
+    "techStack": [],
+    "scale": "MEDIUM"
+  },
+  "feature": {
+    "featureType": "AUTH",
+    "screenLocation": "로그인 상태 무관. 가입된 이메일 주소를 알고 있음. 비밀번호 찾기 폼 접근 가능.",
+    "triggeringAction": "비밀번호 찾기에서 가입 이메일을 입력하고 ‘임시 비밀번호 발송’ 요청"
+  },
+  "title": "비밀번호 찾기에서 가입 이메일을 입력하고 ‘임시 비밀번호 발송’ 요청",
+  "description": "비밀번호 찾기에서 가입 이메일을 입력하고 ‘임시 비밀번호 발송’ 요청",
+  "observedBehavior": "[[OK]] navigate: http://localhost:8080/bbs/board.php?bo_table=free (1577ms) — final_url=http://localhost:8080/bbs/board.php?bo_table=free\n[[OK]] action: 2.1 게시글 목록 조회 — url_after=http://localhost:8080/bbs/board.php?bo_table=free\n[[NG]] assert: fail — 페이지 텍스트(일부): awt_awt01님 로그인 중 로그아웃\n자유게시판 페이지\n본문 바",
+  "expectedBehavior": "가입 이메일로 임시 비밀번호가 발송됨(발송 완료 안내 또는 큐잉 확인).",
+  "iso25023Mapping": {
+    "characteristic": "보안성",
+    "subcharacteristic": "진정성"
+  },
+  "severity": "BLOCKER",
+  "defectCategory": "AUTH_BYPASS",
+  "detection": {
+    "method": "AUTO_TC",
+    "detectingTcId": "TC-005-001",
+    "timeToDetectMin": 1
+  },
+  "rootCause": {
+    "category": "BACKEND",
+    "whatWasMissed": ""
+  },
+  "learning": {
+    "patternProposal": null
+  },
+  "tags": [],
+  "status": "OPEN",
+  "resolution": "",
+  "_meta": {
+    "createdBy": "awt_system",
+    "createdAt": "2026-06-04T05:01:47.951286+00:00",
+    "patternGeneratedBy": "AI",
+    "patternApprovedBy": null,
+    "patternApprovedAt": null,
+    "lastModifiedBy": "awt_system",
+    "lastModifiedAt": "2026-06-04T05:01:48.119816+00:00"
+  }
+}

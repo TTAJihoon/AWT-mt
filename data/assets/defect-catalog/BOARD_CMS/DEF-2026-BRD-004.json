@@ -1,0 +1,58 @@
+{
+  "defectId": "DEF-2026-BRD-004",
+  "projectId": "POC-GNUBOARD5-2026",
+  "discoveredAt": "2026-05-19T00:00:00+09:00",
+  "product": {
+    "productTypeId": "BOARD_CMS",
+    "techStack": ["PHP", "MySQL", "JavaScript"],
+    "scale": "MEDIUM"
+  },
+  "feature": {
+    "featureType": "AUTH",
+    "screenLocation": "/login",
+    "triggeringAction": "비밀번호 빈칸으로 로그인 시도"
+  },
+  "title": "빈 비밀번호 로그인 시 오류 메시지 없음",
+  "description": "로그인 폼에서 비밀번호를 입력하지 않고 제출해도 오류 안내 없이 로그인이 처리됨.",
+  "observedBehavior": "비밀번호 필드를 비운 채 로그인 시도 시 경고 없이 로그인 성공.",
+  "expectedBehavior": "비밀번호 필드가 비어있으면 '비밀번호를 입력하세요' 메시지 표시 후 제출 차단.",
+  "iso25023Mapping": {
+    "characteristic": "사용성",
+    "subcharacteristic": "오류 방지"
+  },
+  "severity": "MINOR",
+  "defectCategory": "INPUT_VALIDATION",
+  "detection": {
+    "method": "AUTO_TC",
+    "detectingTcId": "TC-001-003",
+    "timeToDetectMin": 1
+  },
+  "rootCause": {
+    "category": "FRONTEND",
+    "whatWasMissed": "login() 함수에 password 빈값 체크 없음"
+  },
+  "learning": {
+    "patternProposal": {
+      "name": "REQUIRED_FIELD_EMPTY_VALIDATION",
+      "description": "모든 필수 입력 필드는 빈값 제출 시 오류 메시지를 표시해야 한다",
+      "appliesTo": ["AUTH", "CREATE", "UPDATE"],
+      "checks": [
+        "각 필수 필드를 비운 채 제출 시 해당 필드에 오류 메시지가 표시되는가",
+        "오류 메시지는 어떤 필드가 왜 필요한지 명확히 안내하는가",
+        "제출 버튼이 빈 필수 필드가 있을 때 비활성화되는가 (선택적)"
+      ],
+      "generatedBy": "AI",
+      "status": "approved"
+    }
+  },
+  "tags": ["필수입력", "빈값검증", "로그인"],
+  "status": "RESOLVED",
+  "resolution": "login() 함수에 password.trim() === '' 체크 및 alert 추가",
+  "_meta": {
+    "createdBy": "jh910",
+    "createdAt": "2026-05-19T00:00:00+09:00",
+    "patternGeneratedBy": "AI",
+    "patternApprovedBy": "jh910",
+    "patternApprovedAt": "2026-05-19T00:00:00+09:00"
+  }
+}

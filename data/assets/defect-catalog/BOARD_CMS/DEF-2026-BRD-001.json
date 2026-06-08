@@ -1,0 +1,59 @@
+{
+  "defectId": "DEF-2026-BRD-001",
+  "projectId": "POC-GNUBOARD5-2026",
+  "discoveredAt": "2026-05-19T00:00:00+09:00",
+  "product": {
+    "productTypeId": "BOARD_CMS",
+    "techStack": ["PHP", "MySQL", "JavaScript"],
+    "scale": "MEDIUM"
+  },
+  "feature": {
+    "featureType": "PERMISSION",
+    "screenLocation": "/board/write, /board/delete, /board/comment/delete",
+    "triggeringAction": "비로그인/타인 계정으로 수정·삭제 버튼 클릭"
+  },
+  "title": "수정·삭제 액션에 소유권 검증 없음",
+  "description": "게시글 수정/삭제, 댓글 삭제 시 로그인 여부 및 소유자 확인 없이 액션이 실행됨. 비로그인 사용자 또는 타인이 타인 게시글·댓글을 무단으로 수정·삭제 가능.",
+  "observedBehavior": "비로그인 상태에서 수정 폼 진입 및 저장 성공. 다른 계정 로그인 후 타인 글 수정·삭제 버튼 노출 및 실행 성공.",
+  "expectedBehavior": "수정·삭제 액션은 로그인한 소유자 또는 관리자만 실행 가능. 권한 없으면 버튼 미노출 및 서버측 거부.",
+  "iso25023Mapping": {
+    "characteristic": "보안성",
+    "subcharacteristic": "접근 제어성"
+  },
+  "severity": "CRITICAL",
+  "defectCategory": "AUTH_BYPASS",
+  "detection": {
+    "method": "AUTO_TC",
+    "detectingTcId": "TC-007-002",
+    "timeToDetectMin": 1
+  },
+  "rootCause": {
+    "category": "FRONTEND",
+    "whatWasMissed": "viewEdit(), viewDetail()에 세션·소유권 체크 로직 없음"
+  },
+  "learning": {
+    "patternProposal": {
+      "name": "AUTH_GATE_MUTABLE_ACTIONS",
+      "description": "변경 액션(수정/삭제)은 소유자+관리자만 실행 가능해야 한다",
+      "appliesTo": ["UPDATE", "DELETE", "PERMISSION"],
+      "checks": [
+        "비로그인 상태에서 수정/삭제 버튼이 노출되지 않는가",
+        "비로그인 상태에서 수정/삭제 요청이 서버에서 거부되는가",
+        "타인 계정으로 수정/삭제 요청 시 거부되는가",
+        "관리자 계정으로 타인 글 수정/삭제가 허용되는가"
+      ],
+      "generatedBy": "AI",
+      "status": "approved"
+    }
+  },
+  "tags": ["권한검증", "인증우회", "소유권", "CRUD보안"],
+  "status": "RESOLVED",
+  "resolution": "viewEdit(), viewDetail()에 세션 체크 및 소유자 비교 로직 추가",
+  "_meta": {
+    "createdBy": "jh910",
+    "createdAt": "2026-05-19T00:00:00+09:00",
+    "patternGeneratedBy": "AI",
+    "patternApprovedBy": "jh910",
+    "patternApprovedAt": "2026-05-19T00:00:00+09:00"
+  }
+}

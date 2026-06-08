@@ -1,0 +1,49 @@
+{
+  "defectId": "DEF-2026-BRD-006",
+  "projectId": "RUN-c38e532c",
+  "discoveredAt": "2026-06-04T05:01:44.832116+00:00",
+  "product": {
+    "productTypeId": "BOARD_CMS",
+    "techStack": [],
+    "scale": "MEDIUM"
+  },
+  "feature": {
+    "featureType": "AUTH",
+    "screenLocation": "회원가입 화면 접근 가능(비로그인). 약관 및 개인정보처리방침 동의 체크박스가 노출됨. 이메일 인증 옵션은 ‘비활성’ 상태(인증 없이 가입 완료).",
+    "triggeringAction": "회원가입 페이지에서 아이디=abcd1234, 비밀번호=passw0rd, 이름=홍길동, 이메일=test@example.com, 닉네임=길동, 약관동의/개인정보동의 체크 후 ‘회원가입"
+  },
+  "title": "회원가입 페이지에서 아이디=abcd1234, 비밀번호=passw0rd, 이름=홍길동,...",
+  "description": "회원가입 페이지에서 아이디=abcd1234, 비밀번호=passw0rd, 이름=홍길동, 이메일=test@example.com, 닉네임=길동, 약관동의/개인정보동의 체크 후 ‘회원가입’ 클릭",
+  "observedBehavior": "[[OK]] navigate: http://localhost:8080/bbs/register.php (1434ms) — final_url=http://localhost:8080/bbs/register.php\n[[OK]] action: 1.1 회원가입 — url_after=http://localhost:8080/bbs/register.php\n[[NG]] assert: fail — 페이지 텍스트(일부): 회원가입약관\n본문 바로가기\n커뮤니티\n쇼핑몰\nFAQ\nQ&A\n새글\n접속자1\n사이트 내 전체검색\n검색어 필수\n검색\n인기검색어\n회원가입\n로그",
+  "expectedBehavior": "회원가입이 완료되었음을 알리는 성공 안내가 표시되며, 생성된 계정의 레벨이 1로 설정됨을 확인. 이후 로그인 가능 상태가 됨.",
+  "iso25023Mapping": {
+    "characteristic": "보안성",
+    "subcharacteristic": "진정성"
+  },
+  "severity": "BLOCKER",
+  "defectCategory": "AUTH_BYPASS",
+  "detection": {
+    "method": "AUTO_TC",
+    "detectingTcId": "TC-001-001",
+    "timeToDetectMin": 1
+  },
+  "rootCause": {
+    "category": "BACKEND",
+    "whatWasMissed": ""
+  },
+  "learning": {
+    "patternProposal": null
+  },
+  "tags": [],
+  "status": "OPEN",
+  "resolution": "",
+  "_meta": {
+    "createdBy": "awt_system",
+    "createdAt": "2026-06-04T05:01:44.832116+00:00",
+    "patternGeneratedBy": "AI",
+    "patternApprovedBy": null,
+    "patternApprovedAt": null,
+    "lastModifiedBy": "awt_system",
+    "lastModifiedAt": "2026-06-04T05:01:47.947915+00:00"
+  }
+}

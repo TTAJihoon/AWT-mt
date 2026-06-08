@@ -1,0 +1,38 @@
+# AWT Phase 1 — Python dependencies
+# Python 3.11+
+
+# UI
+PySide6>=6.7.0
+
+# LLM Providers (D48 — provider 추상화)
+anthropic>=0.40.0
+openai>=1.50.0
+google-genai>=0.3.0
+
+# Playwright (DOM 스캔 + TC 자동 실행 — web 대상)
+playwright>=1.44.0
+
+# HTTP 클라이언트 (api_rest 대상 — D61. anthropic 등 경유로 이미 설치됨)
+httpx>=0.27.0
+
+# PostgreSQL (중앙 인증 DB 클라이언트)
+psycopg2-binary>=2.9.9
+
+# API 키 암호화
+cryptography>=42.0.0
+
+# Excel 빌더
+openpyxl>=3.1.2
+
+# 파일 파싱 (PDF / DOCX)
+PyMuPDF>=1.24.0
+python-docx>=1.1.0
+
+# 유틸리티
+python-dotenv>=1.0.0
+
+# YAML (도메인 불변규칙 자산 로더)
+PyYAML>=6.0.1
+
+# 테스트
+pytest>=8.0.0

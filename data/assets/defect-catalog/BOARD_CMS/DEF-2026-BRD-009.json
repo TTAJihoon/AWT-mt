@@ -1,0 +1,49 @@
+{
+  "defectId": "DEF-2026-BRD-009",
+  "projectId": "RUN-c38e532c",
+  "discoveredAt": "2026-06-04T05:01:48.287522+00:00",
+  "product": {
+    "productTypeId": "BOARD_CMS",
+    "techStack": [],
+    "scale": "MEDIUM"
+  },
+  "feature": {
+    "featureType": "AUTH",
+    "screenLocation": "회원가입 페이지. 아이디 20자(영문/숫자 조합). 비밀번호/이름/이메일/닉네임은 유효. 동의 체크됨. 중복 및 금지단어 없음.",
+    "triggeringAction": "아이디 길이 상한(20자) 경계값으로 회원가입 시도"
+  },
+  "title": "아이디 길이 상한(20자) 경계값으로 회원가입 시도",
+  "description": "아이디 길이 상한(20자) 경계값으로 회원가입 시도",
+  "observedBehavior": "[[OK]] navigate: http://localhost:8080/bbs/write.php?bo_table=free&wr_id=1&w=u (835ms) — final_url=http://localhost:8080/bbs/write.php?bo_table=free&wr_id=1&w=u\n[[OK]] action: 2.4 게시글 수정 — url_after=http://localhost:8080/bbs/write.php?bo_table=free&wr_id=1&w=u\n[[NG]] assert: fail — 페이지 텍스트(일부): awt_",
+  "expectedBehavior": "회원가입이 성공하고 계정이 생성됨.",
+  "iso25023Mapping": {
+    "characteristic": "보안성",
+    "subcharacteristic": "진정성"
+  },
+  "severity": "MAJOR",
+  "defectCategory": "AUTH_BYPASS",
+  "detection": {
+    "method": "AUTO_TC",
+    "detectingTcId": "TC-008-002",
+    "timeToDetectMin": 1
+  },
+  "rootCause": {
+    "category": "BACKEND",
+    "whatWasMissed": ""
+  },
+  "learning": {
+    "patternProposal": null
+  },
+  "tags": [],
+  "status": "OPEN",
+  "resolution": "",
+  "_meta": {
+    "createdBy": "awt_system",
+    "createdAt": "2026-06-04T05:01:48.287522+00:00",
+    "patternGeneratedBy": "AI",
+    "patternApprovedBy": null,
+    "patternApprovedAt": null,
+    "lastModifiedBy": "awt_system",
+    "lastModifiedAt": "2026-06-04T05:01:48.499304+00:00"
+  }
+}

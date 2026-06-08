@@ -1,0 +1,45 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # v1.0.0, v1.1.0 등 태그 push 시 자동 실행
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'   # 3.14는 PyInstaller 미지원 → 3.11 사용
+
+      - name: 의존성 설치
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Playwright 브라우저 설치
+        run: playwright install chromium
+
+      - name: PyInstaller 빌드
+        run: python -m PyInstaller --clean --noconfirm installer/awt.spec
+
+      - name: .env.example 복사
+        run: Copy-Item .env.example dist\AWT\.env.example
+
+      - name: Inno Setup 인스톨러 빌드
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/awt_setup.iss
+          options: /O+
+
+      - name: GitHub Release 업로드
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/installer/AWT_Setup_*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

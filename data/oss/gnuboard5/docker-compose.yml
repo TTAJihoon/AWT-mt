@@ -1,0 +1,60 @@
+version: "3.9"
+
+# 그누보드5 로컬 테스트 환경 (AWT Phase 2 — D47)
+# ─────────────────────────────────────────────────────────
+# 사전 준비:
+#   git clone https://github.com/gnuboard/gnuboard5.git app
+# 실행:
+#   docker compose up -d
+# 접속:
+#   http://localhost:8080  →  /install 에서 초기 설치
+# AWT Stage 0 대상 URL:
+#   http://localhost:8080
+
+services:
+  db:
+    image: mariadb:10.11
+    container_name: gnuboard5_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: gnuboard5
+      MYSQL_USER: gnuboard
+      MYSQL_PASSWORD: gnuboard
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - gb5net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: webdevops/php-apache:8.1
+    container_name: gnuboard5_web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app:/app                           # 그누보드5 소스 마운트
+      - ./awt_fixture.php:/app/awt_fixture.php:ro   # AWT 테스트 픽스처 헬퍼 (테스트 전용)
+      - ./php.ini:/opt/docker/etc/php/php.ini:ro
+    environment:
+      WEB_DOCUMENT_ROOT: /app
+      PHP_DATE_TIMEZONE: Asia/Seoul
+      PHP_MEMORY_LIMIT: 256M
+      PHP_UPLOAD_MAX_FILESIZE: 50M
+      PHP_POST_MAX_SIZE: 50M
+    networks:
+      - gb5net
+
+networks:
+  gb5net:
+
+volumes:
+  db_data:

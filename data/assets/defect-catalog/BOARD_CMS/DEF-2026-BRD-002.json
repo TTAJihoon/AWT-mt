@@ -1,0 +1,58 @@
+{
+  "defectId": "DEF-2026-BRD-002",
+  "projectId": "POC-GNUBOARD5-2026",
+  "discoveredAt": "2026-05-19T00:00:00+09:00",
+  "product": {
+    "productTypeId": "BOARD_CMS",
+    "techStack": ["PHP", "MySQL", "JavaScript"],
+    "scale": "MEDIUM"
+  },
+  "feature": {
+    "featureType": "CREATE",
+    "screenLocation": "/board/write",
+    "triggeringAction": "100자 이상 제목 입력 후 등록 버튼 클릭"
+  },
+  "title": "게시글 제목 최대 길이 검증 없음",
+  "description": "게시글 작성 시 제목 입력 필드에 최대 길이 검증이 없어 매뉴얼 명세(50자)를 초과한 제목이 저장됨.",
+  "observedBehavior": "100자 제목을 입력하고 등록하면 거부 없이 정상 저장됨.",
+  "expectedBehavior": "제목 50자 초과 시 alert 또는 inline 오류 메시지 표시 후 저장 거부.",
+  "iso25023Mapping": {
+    "characteristic": "기능 적합성",
+    "subcharacteristic": "기능 정확성"
+  },
+  "severity": "MAJOR",
+  "defectCategory": "INPUT_VALIDATION",
+  "detection": {
+    "method": "AUTO_TC",
+    "detectingTcId": "TC-003-006",
+    "timeToDetectMin": 1
+  },
+  "rootCause": {
+    "category": "FRONTEND",
+    "whatWasMissed": "submitPost()에 title.length 검증 없음"
+  },
+  "learning": {
+    "patternProposal": {
+      "name": "INPUT_MAX_LENGTH_ENFORCEMENT",
+      "description": "명세된 최대 길이는 클라이언트+서버 양측에서 검증해야 한다",
+      "appliesTo": ["CREATE", "UPDATE"],
+      "checks": [
+        "명세 최대 길이 + 1 입력 시 오류 메시지가 표시되는가",
+        "명세 최대 길이 입력 시 정상 저장되는가",
+        "서버 API에도 동일한 길이 검증이 있는가"
+      ],
+      "generatedBy": "AI",
+      "status": "approved"
+    }
+  },
+  "tags": ["입력검증", "길이제한", "경계값"],
+  "status": "RESOLVED",
+  "resolution": "submitPost()에 title.length > 50 체크 추가",
+  "_meta": {
+    "createdBy": "jh910",
+    "createdAt": "2026-05-19T00:00:00+09:00",
+    "patternGeneratedBy": "AI",
+    "patternApprovedBy": "jh910",
+    "patternApprovedAt": "2026-05-19T00:00:00+09:00"
+  }
+}

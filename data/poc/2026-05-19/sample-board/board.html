@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>샘플 게시판</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 20px auto; padding: 10px; }
+  header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+  nav { display: flex; gap: 10px; }
+  button, input[type=text], input[type=password], textarea { padding: 6px 10px; font-size: 14px; }
+  button { cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background: #f5f5f5; }
+  .pager { margin-top: 15px; display: flex; gap: 6px; }
+  .pager button { padding: 4px 8px; }
+  .row-actions { display: flex; gap: 6px; }
+  form { margin-top: 15px; }
+  form > div { margin-bottom: 8px; }
+  label { display: inline-block; width: 80px; }
+  input[type=text], textarea { width: 400px; }
+  textarea { height: 120px; vertical-align: top; }
+  .comment { border-top: 1px dashed #ccc; padding: 8px 0; }
+  .err { color: red; margin: 8px 0; }
+  .ok { color: green; margin: 8px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>샘플 게시판</h1>
+  <nav id="nav-area"></nav>
+</header>
+<main id="main"></main>
+
+<script>
+// === 상태 ===
+const STORAGE = 'awt_poc_board';
+function loadDB() {
+  const raw = localStorage.getItem(STORAGE);
+  if (raw) return JSON.parse(raw);
+  const seed = { posts: [], comments: [], nextPostId: 1, nextCommentId: 1, currentUser: null };
+  for (let i = 1; i <= 15; i++) {
+    seed.posts.push({ id: i, title: `샘플 글 ${i}`, body: `이것은 샘플 글 ${i}의 본문입니다.`, author: i % 2 === 0 ? 'alice' : 'bob', createdAt: `2026-05-${String(i).padStart(2,'0')}` });
+  }
+  seed.nextPostId = 16;
+  localStorage.setItem(STORAGE, JSON.stringify(seed));
+  return seed;
+}
+function saveDB(db) { localStorage.setItem(STORAGE, JSON.stringify(db)); }
+let db = loadDB();
+
+// === 라우터 ===
+function go(view, param) { renderNav(); renderMain(view, param); }
+function renderNav() {
+  const nav = document.getElementById('nav-area');
+  let html = `<button onclick="go('list',1)">목록</button>`;
+  if (db.currentUser) {
+    html += `<button onclick="go('write')">글쓰기</button>`;
+    html += `<span>로그인: ${db.currentUser}</span>`;
+    html += `<button onclick="logout()">로그아웃</button>`;
+  } else {
+    html += `<button onclick="go('login')">로그인</button>`;
+  }
+  nav.innerHTML = html;
+}
+
+// === 뷰 ===
+function renderMain(view, param) {
+  const m = document.getElementById('main');
+  if (view === 'list') return viewList(m, param || 1);
+  if (view === 'detail') return viewDetail(m, param);
+  if (view === 'write') return viewWrite(m);
+  if (view === 'edit') return viewEdit(m, param);
+  if (view === 'login') return viewLogin(m);
+}
+
+function viewList(m, page) {
+  const PER = 10;
+  const total = db.posts.length;
+  const maxPage = Math.max(1, Math.ceil(total / PER));
+  // BUG-1 의도: page 범위 초과 시 빈 페이지 깨짐 (clamp 안 함)
+  const start = (page - 1) * PER;
+  const slice = db.posts.slice().reverse().slice(start, start + PER);
+  let html = `<h2>글 목록 (총 ${total}개)</h2>`;
+  html += `<table><thead><tr><th>번호</th><th>제목</th><th>작성자</th><th>작성일</th></tr></thead><tbody>`;
+  for (const p of slice) {
+    html += `<tr><td>${p.id}</td><td><a href="javascript:go('detail',${p.id})">${escapeHtml(p.title)}</a></td><td>${p.author}</td><td>${p.createdAt}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  html += `<div class="pager">`;
+  for (let i = 1; i <= maxPage; i++) {
+    html += `<button onclick="go('list',${i})">${i}</button>`;
+  }
+  html += `</div>`;
+  m.innerHTML = html;
+}
+
+function viewDetail(m, id) {
+  const p = db.posts.find(x => x.id === Number(id));
+  if (!p) { m.innerHTML = `<p class="err">글을 찾을 수 없습니다.</p>`; return; }
+  const cmts = db.comments.filter(c => c.postId === p.id);
+  let html = `<h2>${escapeHtml(p.title)}</h2>`;
+  html += `<div>작성자: ${p.author} · ${p.createdAt}</div>`;
+  html += `<div style="margin-top:10px;border:1px solid #eee;padding:10px;">${escapeHtml(p.body)}</div>`;
+  html += `<div class="row-actions" style="margin-top:10px;">`;
+  // BUG-2 의도: 본인 글이 아니어도 수정·삭제 버튼 노출 (권한 검증 누락)
+  html += `<button onclick="go('edit',${p.id})">수정</button>`;
+  html += `<button onclick="deletePost(${p.id})">삭제</button>`;
+  html += `</div>`;
+  html += `<h3 style="margin-top:20px;">댓글 ${cmts.length}개</h3>`;
+  for (const c of cmts) {
+    html += `<div class="comment"><b>${c.author}</b>: ${escapeHtml(c.body)} <button onclick="deleteComment(${c.id})">삭제</button></div>`;
+  }
+  if (db.currentUser) {
+    html += `<form onsubmit="addComment(event,${p.id})"><div><textarea id="cmt-body" placeholder="댓글 입력"></textarea></div><button>댓글 작성</button></form>`;
+  } else {
+    html += `<p>로그인 후 댓글을 작성할 수 있습니다.</p>`;
+  }
+  m.innerHTML = html;
+}
+
+function viewWrite(m) {
+  if (!db.currentUser) { m.innerHTML = `<p class="err">로그인이 필요합니다.</p>`; return; }
+  m.innerHTML = `
+    <h2>글쓰기</h2>
+    <form onsubmit="submitPost(event)">
+      <div><label>제목</label><input type="text" id="title"></div>
+      <div><label>내용</label><textarea id="body"></textarea></div>
+      <div><button>등록</button></div>
+    </form>`;
+}
+
+function viewEdit(m, id) {
+  const p = db.posts.find(x => x.id === Number(id));
+  if (!p) { m.innerHTML = `<p class="err">글이 없습니다.</p>`; return; }
+  // BUG-2 의도 (연결): 비로그인 또는 다른 사용자도 수정 폼 진입 가능
+  m.innerHTML = `
+    <h2>글 수정</h2>
+    <form onsubmit="updatePost(event,${p.id})">
+      <div><label>제목</label><input type="text" id="title" value="${escapeHtml(p.title)}"></div>
+      <div><label>내용</label><textarea id="body">${escapeHtml(p.body)}</textarea></div>
+      <div><button>저장</button></div>
+    </form>`;
+}
+
+function viewLogin(m) {
+  m.innerHTML = `
+    <h2>로그인</h2>
+    <form onsubmit="login(event)">
+      <div><label>아이디</label><input type="text" id="username"></div>
+      <div><label>비밀번호</label><input type="password" id="password"></div>
+      <div><button>로그인</button></div>
+      <p style="color:#666;font-size:12px;">데모: aaa~zzz 아무 아이디·비밀번호 가능</p>
+    </form>`;
+}
+
+// === 액션 ===
+function login(e) {
+  e.preventDefault();
+  const u = document.getElementById('username').value.trim();
+  // 어떤 비밀번호도 통과 — 데모 목적
+  if (!u) return;
+  db.currentUser = u;
+  saveDB(db);
+  go('list', 1);
+}
+function logout() { db.currentUser = null; saveDB(db); go('list', 1); }
+
+function submitPost(e) {
+  e.preventDefault();
+  const title = document.getElementById('title').value.trim();
+  const body = document.getElementById('body').value.trim();
+  // BUG-3 의도: 제목 길이 검증 없음 (매뉴얼은 1~50자)
+  if (!title || !body) { alert('제목·내용을 입력하세요'); return; }
+  db.posts.push({ id: db.nextPostId++, title, body, author: db.currentUser || 'anonymous', createdAt: new Date().toISOString().slice(0,10) });
+  saveDB(db);
+  go('list', 1);
+}
+
+function updatePost(e, id) {
+  e.preventDefault();
+  const p = db.posts.find(x => x.id === id);
+  p.title = document.getElementById('title').value.trim();
+  p.body = document.getElementById('body').value.trim();
+  saveDB(db);
+  go('detail', id);
+}
+
+function deletePost(id) {
+  if (!confirm('삭제할까요?')) return;
+  db.posts = db.posts.filter(p => p.id !== id);
+  db.comments = db.comments.filter(c => c.postId !== id);
+  saveDB(db);
+  go('list', 1);
+}
+
+function addComment(e, postId) {
+  e.preventDefault();
+  const body = document.getElementById('cmt-body').value.trim();
+  if (!body) return;
+  db.comments.push({ id: db.nextCommentId++, postId, author: db.currentUser, body });
+  saveDB(db);
+  go('detail', postId);
+}
+
+function deleteComment(id) {
+  db.comments = db.comments.filter(c => c.id !== id);
+  saveDB(db);
+  // 현재 상세 페이지 재렌더
+  const pid = db.comments[0]?.postId;
+  if (pid) go('detail', pid); else go('list', 1);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+}
+
+// 초기 진입
+go('list', 1);
+</script>
+</body>
+</html>

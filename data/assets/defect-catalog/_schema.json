@@ -1,0 +1,58 @@
+{
+  "$schema": "AWT Defect Catalog Schema v1.0",
+  "_comment": "결함 카탈로그 스키마. 각 결함은 제품유형별 디렉터리에 저장.",
+  "fields": {
+    "defectId": "DEF-YYYY-TYPE-NNN (예: DEF-2026-BRD-001)",
+    "projectId": "프로젝트 식별자 (익명화 가능)",
+    "discoveredAt": "ISO 8601",
+    "product": {
+      "productTypeId": "BOARD_CMS | USER_AUTH | SHOPPING | SEARCH | DASHBOARD | FORM_WORKFLOW | OTHER",
+      "techStack": "배열",
+      "scale": "SMALL | MEDIUM | LARGE"
+    },
+    "feature": {
+      "featureType": "CREATE | READ | UPDATE | DELETE | AUTH | SEARCH | PAGINATION | PERMISSION | OTHER",
+      "screenLocation": "URL 또는 화면 이름",
+      "triggeringAction": "결함을 유발한 액션"
+    },
+    "title": "결함 제목 (50자 이내)",
+    "description": "상세 설명",
+    "observedBehavior": "실제 동작",
+    "expectedBehavior": "기대 동작",
+    "iso25023Mapping": {
+      "characteristic": "ISO 25023 품질특성",
+      "subcharacteristic": "ISO 25023 하위특성"
+    },
+    "severity": "BLOCKER | CRITICAL | MAJOR | MINOR | LOW",
+    "defectCategory": "AUTH_BYPASS | INPUT_VALIDATION | BOUNDARY | BUSINESS_RULE | UI_CONSISTENCY | OTHER",
+    "detection": {
+      "method": "AUTO_TC | MANUAL_TC | EXPLORATORY | CUSTOMER_REPORT",
+      "detectingTcId": "TC-XXX-YYY 또는 null",
+      "timeToDetectMin": "분 (정수)"
+    },
+    "rootCause": {
+      "category": "FRONTEND | BACKEND | SPEC_AMBIGUITY | INTEGRATION | DATA | CONFIG",
+      "whatWasMissed": "무엇이 빠졌는지"
+    },
+    "learning": {
+      "patternProposal": {
+        "name": "SNAKE_UPPER_CASE (20자 이내)",
+        "description": "패턴 설명 (50자 이내)",
+        "appliesTo": "featureType 배열",
+        "checks": "검증 항목 배열 (2~5개)",
+        "generatedBy": "AI | HUMAN",
+        "status": "candidate | approved | rejected | archived"
+      }
+    },
+    "tags": "키워드 배열",
+    "status": "OPEN | RESOLVED | WONT_FIX",
+    "resolution": "해결 방법 (선택)",
+    "_meta": {
+      "createdBy": "awt 계정 username",
+      "createdAt": "ISO 8601",
+      "patternGeneratedBy": "AI | username",
+      "patternApprovedBy": "username 또는 null",
+      "patternApprovedAt": "ISO 8601 또는 null"
+    }
+  }
+}
