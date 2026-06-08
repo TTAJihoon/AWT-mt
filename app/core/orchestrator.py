@@ -7,16 +7,15 @@ from typing import Callable
 
 from app.api.llm_client import LLMClient
 from app.core import (
-    stage0_dom_scan,
     stage1_ingest,
     stage1b_consolidate,
     stage2_tc_design,
     stage3_verify,
-    stage5_execute,
     stage6_enhance,
     stage6b_defect_feedback,
     stage7_output,
 )
+# stage0_dom_scan / stage5_execute는 web 어댑터가 lazy import (playwright 비의존화)
 from app.tools.excel_builder import build_review
 
 RUNS_DIR = Path("data/runs")
@@ -118,11 +117,13 @@ class Orchestrator:
         config: RunConfig,
         progress_cb: Callable[[str], None] | None = None,
         raw_progress_cb: Callable[[str], None] | None = None,
+        llm_client=None,
     ):
         """
         Args:
             progress_cb:     사용자 친화 메시지(humanize 후). humanize=None인 메시지는 받지 않음.
             raw_progress_cb: 원본(raw) 메시지 — humanize 전 단계. 상세 로그 패널용.
+            llm_client:      주입할 LLM 클라이언트(테스트·풀런 데모용 Mock 등). None이면 LLMClient 생성.
         """
         self.config = config
         # _safe_cb 위에서 이미 설정됨
@@ -156,7 +157,7 @@ class Orchestrator:
                 (progress_cb or (lambda m: None))(safe)
 
         self._cb = _safe_cb
-        self.llm = LLMClient(
+        self.llm = llm_client or LLMClient(
             api_key=config.api_key,
             run_id=config.run_id,
             model_override=config.model_override,
@@ -348,6 +349,9 @@ class Orchestrator:
         # 시작 전 플래그 리셋 (이전 실행이 중단된 상태일 수 있음)
         self._paused  = False
         self._stopped = False
+        # 비웹 대상: 실행 전 LLM으로 test_data 보강(명세-의존 값). 실패 시 휴리스틱 폴백.
+        if self.config.target_kind in ("api_rest", "api_code"):
+            self._enrich_test_data()
         self.tcs = adapter.executor.execute(
             tcs=self.tcs,
             config=self.config,
@@ -361,6 +365,37 @@ class Orchestrator:
         self._save_intermediate("tc_executed")
         self._stage = 5
         return self.tcs
+
+    def _enrich_test_data(self) -> None:
+        """실행 직전 — 비웹 TC에 LLM이 명세-의존 test_data를 주입(D67, 작업1-B).
+
+        leaf별로 TC를 묶어, 해당 leaf 명세(매뉴얼 발췌)를 근거로 LLM에 요청.
+        LLM 미가용/오류 시 조용히 폴백(실행기는 휴리스틱 value_synth 사용).
+        """
+        try:
+            from app.adapters import llm_test_data
+            from app.core.stage1_ingest import excerpt_for_leaf
+        except Exception:
+            return
+        leaves = self.ingest_result.get("leaves") or []
+        leaf_by_name = {lf.get("category_leaf"): lf for lf in leaves}
+        manual = self.ingest_result.get("manual_text", "")
+        runnable = [tc for tc in self.tcs
+                    if tc.get("review_status") in ("approved", "edited")
+                    and not tc.get("test_data")]
+        if not runnable:
+            return
+        groups: dict[str, list[dict]] = {}
+        for tc in runnable:
+            groups.setdefault(tc.get("소분류", ""), []).append(tc)
+        self._cb(f"  test_data 보강 — {len(groups)}개 기능, {len(runnable)}개 TC")
+        for leafname, tcs in groups.items():
+            lf = leaf_by_name.get(leafname)
+            spec = excerpt_for_leaf(manual, lf) if lf else leafname
+            try:
+                llm_test_data.enrich(self.llm, self.config.target_kind, spec or leafname, tcs)
+            except Exception:
+                pass  # 폴백: 실행기 휴리스틱
 
     # ── Stage 6 ──────────────────────────────────────────────────────────
     def run_stage6(self) -> list[dict]:
