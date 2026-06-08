@@ -93,6 +93,29 @@ def test_ab_grade_requires_deps(tmp_path):
             progress_cb=lambda m: None, is_paused=lambda: False, is_stopped=lambda: False)
 
 
+def test_gui_action_inference():
+    assert ga._gui_action({}, "ButtonControl") == "invoke"
+    assert ga._gui_action({}, "MenuItemControl") == "invoke"
+    assert ga._gui_action({}, "EditControl") == "set_value"
+    assert ga._gui_action({}, "ComboBoxControl") == "set_value"
+    assert ga._gui_action({"scenario": "전송 버튼 클릭"}, "PaneControl") == "invoke"
+    assert ga._gui_action({"scenario": "메시지 입력"}, "PaneControl") == "set_value"
+    assert ga._gui_action({"scenario": "결과 확인"}, "TextControl") == "read"
+
+
+def test_gui_input_value():
+    assert ga._gui_input_value({"test_data": {"value": "hello"}}) == "hello"
+    assert ga._gui_input_value({"test_data": {"kwargs": {"msg": "hi"}}}) == "hi"
+    assert ga._gui_input_value({}) == "테스트입력"
+
+
+def test_find_control():
+    idx = {"btnSend": "B", "txtMsg": "E"}
+    assert ga._find_control(idx, {"소분류": "btnSend"}) == "B"
+    assert ga._find_control(idx, {"소분류": "Msg"}) == "E"
+    assert ga._find_control(idx, {"소분류": "nope"}) is None
+
+
 def test_probe_requires_deps(tmp_path):
     with pytest.raises(RuntimeError, match="uiautomation"):
         ga.GuiProbe().scan(config=SimpleNamespace(target_config={"exe_path": "x.exe"}),

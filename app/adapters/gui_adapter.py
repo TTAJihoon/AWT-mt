@@ -248,14 +248,142 @@ class GuiExecutor:
         return tcs
 
     def _run_live(self, tcs, config, oracle, evidence, progress_cb, is_stopped):
-        import uiautomation as auto  # noqa: F401  (실행 환경에서만)
-        # 실제 UIA 조작·증적 수집은 대상 앱 종속 — 프레임만 제공.
+        """A/B 등급 TC를 실제 UIA로 조작·검증 (인터랙티브 데스크톱 세션 필요).
+
+        대상 앱 실행 → 메인 윈도우 컨트롤을 name/AutomationId로 색인 → 각 TC를 컨트롤에
+        매핑해 invoke/set_value → 전/후 스크린샷(증적) + 다중소스 오라클(UI 텍스트).
+        """
+        import subprocess
+        import time
+
+        import uiautomation as auto
+
+        tcfg = config.target_config or {}
+        exe = tcfg.get("exe_path")
+        if exe:
+            subprocess.Popen([exe, *(tcfg.get("args") or [])])
+            time.sleep(float(tcfg.get("startup_wait", 3.0)))
+        title_re = tcfg.get("window_title")
+        win = (auto.WindowControl(searchDepth=2, RegexName=title_re)
+               if title_re else auto.GetForegroundControl())
+
+        index: dict[str, object] = {}
+
+        def _walk(ctrl, depth=0):
+            if depth > int(tcfg.get("max_depth", 6)):
+                return
+            for ch in ctrl.GetChildren():
+                for key in ((getattr(ch, "AutomationId", "") or ""), (ch.Name or "")):
+                    if key and key not in index:
+                        index[key] = ch
+                _walk(ch, depth + 1)
+
+        try:
+            _walk(win)
+        except Exception as e:  # noqa: BLE001
+            progress_cb(f"  ⚠ UIA 트리 탐색 실패: {e}")
+
         for tc in tcs:
             if is_stopped and is_stopped():
                 break
-            # TODO(P4-live): target_ref로 컨트롤 탐색 → 액션 수행 → 다중소스 오라클.
-            tc.setdefault("result", "blocked")
-            tc.setdefault("actual", "라이브 UIA 실행 프레임 — 대상 앱 연결 필요")
+            try:
+                win.CaptureToImage(str(evidence.path(tc["tc_id"], "before.png")))
+            except Exception:
+                pass
+            ctrl = _find_control(index, tc)
+            if ctrl is None:
+                tc["result"] = "blocked"
+                tc["actual"] = f"컨트롤 미발견: {tc.get('소분류')!r}"
+                tc["exec_confidence"] = 0.2
+                continue
+            action = _gui_action(tc, getattr(ctrl, "ControlTypeName", ""))
+            try:
+                if action == "set_value":
+                    val = _gui_input_value(tc)
+                    try:
+                        ctrl.GetValuePattern().SetValue(val)
+                    except Exception:
+                        ctrl.SetFocus(); auto.SendKeys(val)
+                elif action == "invoke":
+                    try:
+                        ctrl.GetInvokePattern().Invoke()
+                    except Exception:
+                        ctrl.Click()
+                time.sleep(0.4)
+                try:
+                    win.CaptureToImage(str(evidence.path(tc["tc_id"], "after.png")))
+                except Exception:
+                    pass
+                verdict = oracle.verify(tc.get("expected", ""),
+                                        {"ui_text": _collect_text(win)},
+                                        tc.get("verification_methods", []))
+                tc["result"] = verdict.status
+                tc["actual"] = verdict.actual
+                tc["exec_confidence"] = verdict.confidence
+            except Exception as e:  # noqa: BLE001
+                tc["result"] = "blocked"
+                tc["actual"] = f"UIA 조작 오류: {str(e)[:160]}"
+                tc["exec_confidence"] = 0.2
+            progress_cb(f"  {tc['tc_id']} {tc.get('소분류')} [{action}] → {tc.get('result')}")
+
+
+# ── 라이브 조작 헬퍼 (순수 로직은 단위 테스트 대상) ──────────────────────────
+def _gui_action(tc: dict, control_type: str) -> str:
+    """TC + 컨트롤 유형 → 수행 액션(invoke/set_value/read)."""
+    ct = (control_type or "").lower()
+    if any(k in ct for k in ("button", "menuitem", "hyperlink", "tabitem", "checkbox")):
+        return "invoke"
+    if any(k in ct for k in ("edit", "combobox", "document")):
+        return "set_value"
+    text = (tc.get("scenario", "") + tc.get("소분류", "")).lower()
+    if any(k in text for k in ("클릭", "선택", "전송", "저장", "등록", "click", "invoke")):
+        return "invoke"
+    if any(k in text for k in ("입력", "set", "type", "fill")):
+        return "set_value"
+    return "read"
+
+
+def _gui_input_value(tc: dict) -> str:
+    """입력 액션 값 — test_data.value 우선, kwargs 첫 값, 없으면 기본."""
+    td = tc.get("test_data")
+    if isinstance(td, dict):
+        if isinstance(td.get("value"), str):
+            return td["value"]
+        kw = td.get("kwargs")
+        if isinstance(kw, dict) and kw:
+            return str(next(iter(kw.values())))
+    return "테스트입력"
+
+
+def _find_control(index: dict, tc: dict):
+    """index(name/AutomationId→control)에서 TC에 맞는 컨트롤 탐색."""
+    leaf = (tc.get("소분류") or "").strip()
+    if leaf in index:
+        return index[leaf]
+    for key, ctrl in index.items():
+        if leaf and (leaf in key or key in leaf):
+            return ctrl
+    return None
+
+
+def _collect_text(win) -> str:
+    """윈도우 트리의 Name 텍스트를 모아 UI 검증용 문자열로(라이브 전용)."""
+    parts: list[str] = []
+
+    def _w(ctrl, depth=0):
+        if depth > 8:
+            return
+        for ch in ctrl.GetChildren():
+            n = getattr(ch, "Name", "") or ""
+            if n:
+                parts.append(n)
+            _w(ch, depth + 1)
+
+    try:
+        _w(win)
+    except Exception:
+        pass
+    return " ".join(parts)
 
 
 class _GuiLocator:

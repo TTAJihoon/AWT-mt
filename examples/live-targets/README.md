@@ -30,8 +30,9 @@ PYTHONIOENCODING=utf-8 python examples/live-targets/run_live.py
 - **.NET**: `Calc.Add` happy → 정상 반환(2) PASS / `Calc.Divide` (b=0, test_data로 주입) → `DivideByZeroException` → 음성 기대대로 PASS
 - **Java**: `Calculator.add` happy PASS / `Calculator.divide` (b=0) → `ArithmeticException` PASS
 - **C**: `add`/`mul` happy PASS
-- **GUI**: 샘플 앱을 띄워 **UIA 트리에서 컨트롤(txtInput/btnEcho/lblResult)을 leaf로 수집**(Probe 시연).
-  실제 조작·검증(_run_live)은 대상 앱 종속 프레임으로, 라이브에서 완성 권장.
+- **GUI**: 샘플 앱을 띄워 UIA로 컨트롤 수집(Probe) 후, **실제 조작**까지 수행 —
+  `txtInput`에 "안녕" 입력 → `btnEcho` 클릭 → `lblResult`가 "echo: 안녕"인지 검증(_run_live).
+  전/후 스크린샷은 `evidence/`에 저장. (인터랙티브 데스크톱 세션 필수)
 
 ## 비고
 - 각 언어 러너의 **심볼 리플렉션 + 호출 + 오라클(반환/예외)** 경로는 단위테스트로 검증됨

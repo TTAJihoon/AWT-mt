@@ -96,12 +96,20 @@ def main() -> None:
         print("[SKIP] C: examples/live-targets/c 에서 `gcc -shared -o mathlib.dll mathlib.c` 먼저")
 
     # ── GUI (uiautomation/pywinauto + 인터랙티브 데스크톱) ───────────────
-    #     실행(_run_live)은 대상 앱 종속 프레임 — 여기선 Probe(UIA 스캔)만 시연.
+    #     _run_live가 실제 UIA 조작(입력→클릭→결과 검증)을 수행한다(데스크톱 필요).
     cfg = SimpleNamespace(target_config={
         "exe_path": sys.executable,
         "args": [str(HERE / "gui" / "sample_app.py")],
         "window_title": "AWT Sample App", "startup_wait": 3.0})
-    _exec("gui", cfg, [], "GUI(샘플 PySide6 앱) — Probe만")
+    gui_tcs = [
+        {"tc_id": "TC-GUI-001", "소분류": "txtInput", "design_technique": "happy_path",
+         "scenario": "입력창에 텍스트 입력", "test_data": {"value": "안녕"},
+         "expected": "입력값 반영", "review_status": "approved", "verification_methods": []},
+        {"tc_id": "TC-GUI-002", "소분류": "btnEcho", "design_technique": "happy_path",
+         "scenario": "Echo 버튼 클릭", "expected": "echo: 안녕",
+         "review_status": "approved", "verification_methods": []},
+    ]
+    _exec("gui", cfg, gui_tcs, "GUI(샘플 PySide6 앱)")
 
     # ── 보고서 ───────────────────────────────────────────────────────────
     if collected:
