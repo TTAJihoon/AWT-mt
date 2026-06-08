@@ -21,6 +21,8 @@ class MockLLMClient:
             return self._tc_design(inputs)
         if contract_id == "TC_DESIGN_GROUP":     # D54-A
             return self._tc_design_group(inputs)
+        if contract_id == "TC_DESIGN_API":       # D59 — API-aware
+            return self._tc_design_api(inputs)
         if contract_id == "TC_FLOW":             # D54-B
             return self._tc_flow(inputs)
         if contract_id == "TC_V10_GROUP":        # D56
@@ -79,6 +81,40 @@ class MockLLMClient:
                 t = dict(tc)
                 t["leaf_index"] = gi      # stage2가 leaf로 매핑
                 out.append(t)
+        return {"tcs": out}
+
+    # ── TC_DESIGN_API (D59) — 엔드포인트/함수 leaf에 API-의미 TC ──────────
+    def _tc_design_api(self, inputs: dict) -> dict:
+        block = inputs.get("features_block", "")
+        out: list[dict] = []
+        for line in block.splitlines():
+            m = re.match(r"^\s*(\d+)\.\s*\[(.*?)\]", line)
+            if not m:
+                continue
+            gi = int(m.group(1))
+            leaf = [p.strip() for p in m.group(2).split(">")][-1]
+            method = leaf.split(" ", 1)[0].upper() if " " in leaf else ""
+            is_write = method in ("POST", "PUT", "PATCH") or method == ""  # code 함수 포함
+            out.append({
+                "leaf_index": gi, "scenario": f"{leaf} 정상 호출",
+                "precondition": "유효한 입력값 제공",
+                "expected": "2xx 응답 또는 정상 반환",
+                "design_technique": "happy_path", "negative_category": None,
+                "source_quote": "INFERRED: API 정상 흐름",
+                "gen_confidence": 0.9, "applied_invariant": None, "related_defect_id": None,
+            })
+            if is_write:
+                out.append({
+                    "leaf_index": gi, "scenario": f"{leaf} 필수값 누락/형식 위반",
+                    "precondition": "필수 파라미터 누락 또는 타입 오류 입력",
+                    "expected": "400 Bad Request 또는 예외 발생",
+                    "design_technique": "negative_basic",
+                    "negative_category": "validation_failure",
+                    "source_quote": "INVARIANT: required_field_empty_rejection",
+                    "gen_confidence": 0.8,
+                    "applied_invariant": "required_field_empty_rejection",
+                    "related_defect_id": None,
+                })
         return {"tcs": out}
 
     # ── TC_FLOW (D54-B) — 회귀 안정성 위해 빈 여정(코드 경로만 통과) ──

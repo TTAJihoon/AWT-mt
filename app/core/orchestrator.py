@@ -287,6 +287,9 @@ class Orchestrator:
             excluded_leaves_out=self.stage2_excluded_leaves,
             should_stop=self.is_stopped,
             concurrency=self.config.concurrency,
+            design_contract=("TC_DESIGN_API"
+                             if self.config.target_kind in ("api_rest", "api_code")
+                             else "TC_DESIGN_GROUP"),
         )
         self._save_intermediate("tc_raw")
         self._stage = 2

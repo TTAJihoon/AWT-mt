@@ -161,6 +161,7 @@ def design(
     excluded_leaves_out: list[dict] | None = None,  # 추적성용: max_leaves cap으로 제외된 leaf
     should_stop: Callable[[], bool] | None = None,  # 사용자 중단 신호 (협력적)
     concurrency: int = 1,                            # 동시 그룹 호출 수 (D55)
+    design_contract: str = "TC_DESIGN_GROUP",        # 비웹은 "TC_DESIGN_API"로 교체 (D59)
 ) -> list[dict]:
     """모든 leaf에 대해 TC를 생성해 단일 리스트로 반환.
 
@@ -286,7 +287,7 @@ def design(
         _cb(f"TC 설계 중 (그룹 {b_idx}/{len(batches)}): {url} — 기능 {len(members)}개")
 
         try:
-            result = llm_client.call("TC_DESIGN_GROUP", {
+            result = llm_client.call(design_contract, {
                 "page_context":         f"{url}  (기능 {len(members)}개)",
                 "features_block":       "\n".join(lines),
                 "domain_invariants":    "\n".join(inv_parts) or "(없음)",
