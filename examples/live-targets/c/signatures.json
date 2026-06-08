@@ -1,0 +1,4 @@
+[
+  {"name": "add", "restype": "int", "argtypes": ["int", "int"], "doc": "두 정수의 합"},
+  {"name": "mul", "restype": "int", "argtypes": ["int", "int"], "doc": "두 정수의 곱"}
+]
