@@ -362,22 +362,29 @@ class ApiRestExecutor:
         is_negative = tech not in _POSITIVE_TECH and tech != ""
         headers: dict = {}
         query: dict = {}
+        # test_data 우선(LLM/사용자 제공): {"body":..,"query":{..},"path":{..}}
+        td = tc.get("test_data") if isinstance(tc.get("test_data"), dict) else {}
         # 쿼리 파라미터(필수) 채움
         for p in ref["parameters"]:
             if p.get("in") == "query" and p.get("required"):
                 query[p["name"]] = _example_from_schema(p.get("schema", {}), spec)
+        query.update(td.get("query") or {})
         # 인증: permission_denied 시험이면 인증 누락
         skip_auth = (negcat == "permission_denied")
         _apply_auth(headers, query, auth, skip_auth)
-        # 본문 합성
+        # 본문 합성 (test_data.body 우선)
         body = None
-        if ref.get("request_body_schema") is not None:
+        if "body" in td:
+            body = td["body"]
+        elif ref.get("request_body_schema") is not None:
             if is_negative and negcat in (
                 "validation_failure", "boundary_violation", "injection_or_security"):
                 body = _invalid_body(ref["request_body_schema"], spec, negcat)
             else:
                 body = _example_from_schema(ref["request_body_schema"], spec)
         url = _fill_path(ref["path"], ref["parameters"], spec)
+        for k, v in (td.get("path") or {}).items():
+            url = url.replace("{" + k + "}", str(v))
         try:
             resp = client.request(
                 ref["method"], url,

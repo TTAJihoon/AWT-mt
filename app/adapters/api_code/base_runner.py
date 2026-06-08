@@ -81,23 +81,30 @@ _POSITIVE_TECH = {"happy_path", "equivalence", "state_transition", "cross_featur
 def synth_call(sym: Symbol, technique: str, negcat: str):
     """(kwargs, expect_exception) 또는 None(합성 불가).
 
-    정상 기법 → 유효 인자, 예외 기대 없음.
+    정상 기법 → 유효 인자(이름+타입 의미 반영), 예외 기대 없음.
     음성 기법 → 첫 필수 인자를 위반 값으로, 예외 기대.
+    값 합성은 value_synth(이름/타입/format 휴리스틱)에 위임 — 매뉴얼 없이도 동작.
     """
+    from app.adapters import value_synth
+
     required = [p for p in sym.params if p.get("required")]
     is_negative = technique not in _POSITIVE_TECH and technique != ""
 
+    def _valid(p):
+        return value_synth.valid_value(p["name"], p.get("annotation", ""))
+
     if not is_negative:
-        return ({p["name"]: valid_value(p.get("annotation", "")) for p in required}, False)
+        return ({p["name"]: _valid(p) for p in required}, False)
 
     if not required:
         return None  # 인자 없는 함수는 음성 합성 불가 → 호출측에서 skip
-    kw = {p["name"]: valid_value(p.get("annotation", "")) for p in required}
+    kw = {p["name"]: _valid(p) for p in required}
     first = required[0]
     if negcat == "boundary_violation":
-        bv = boundary_value(first.get("annotation", ""))
+        bv = value_synth.boundary_value(first["name"], first.get("annotation", ""))
         if bv is not None:
             kw[first["name"]] = bv
-    else:  # validation_failure / 기타 → 타입 위반
-        kw[first["name"]] = wrong_value(first.get("annotation", ""))
+    else:  # validation_failure / injection 등 → 위반 값
+        kw[first["name"]] = value_synth.invalid_value(
+            first["name"], first.get("annotation", ""), None, negcat)
     return (kw, True)

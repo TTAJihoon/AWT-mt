@@ -107,12 +107,21 @@ class ApiCodeExecutor:
                 tc["actual"] = f"심볼 매핑 실패: {tc.get('소분류')!r}"
                 tc["exec_confidence"] = 0.2
                 continue
-            synth = synth_call(sym, tc.get("design_technique", ""), tc.get("negative_category", ""))
+            # test_data 우선(LLM/사용자 제공) → 없으면 휴리스틱 합성
+            td = tc.get("test_data") or {}
+            if isinstance(td, dict) and ("kwargs" in td or "args" in td):
+                kwargs = td.get("kwargs", {})
+                expect_exc = bool(td.get("expect_exception",
+                                         tc.get("design_technique", "") not in _POSITIVE_TECH
+                                         and tc.get("design_technique", "") != ""))
+                synth = (kwargs, expect_exc)
+            else:
+                synth = synth_call(sym, tc.get("design_technique", ""), tc.get("negative_category", ""))
             if synth is None:
                 verdict = oracle.verify(tc.get("expected", ""), {"skipped": True}, [])
             else:
                 kwargs, expect_exc = synth
-                res = runner.invoke(sym, [], kwargs, tcfg)
+                res = runner.invoke(sym, list(td.get("args", [])), kwargs, tcfg)
                 verdict = oracle.verify(
                     tc.get("expected", ""),
                     {"result": res, "expect_exception": expect_exc, "skipped": False}, [])
