@@ -42,6 +42,18 @@ Stage 0 Probe(플러그인) → 1 Ingest → 1b Consolidate → 2 TC설계(LLM) 
 - **증적**(`EvidenceCollector`) + **보고서**(`report_summary.py`: 등급요약·실패상세·수동확인·종합의견).
 - **API 키 입력 UI**: 새 실행 시 `ApiKeyDialog` 자동 노출(또는 대시보드 설정 탭). Fernet 암호화 저장.
 
+## 설치 (다른 PC 원클릭)
+새 Windows PC에서:
+1. 이 폴더를 복사(또는 `git clone https://github.com/TTAJihoon/AWT-mt`).
+2. **`setup.bat` 더블클릭** (또는 `powershell -ExecutionPolicy Bypass -File setup.ps1`)
+   → Python(.venv)+의존성 → `.env` 준비 → **인증 DB(Docker 우선, 없으면 psql)** → 스키마+관리자 계정 → 스모크 테스트.
+3. **`run.bat` 더블클릭**으로 앱 실행.
+
+옵션: `setup.bat -Full`(playwright + .NET/Java/GUI 브리지까지) · `-SkipDb` · `-NoVenv` ·
+`-AdminUser admin -AdminPass ****`(비대화식 관리자 생성).
+> Docker Desktop이 있으면 PostgreSQL을 컨테이너로 자동 기동(네이티브 설치 불필요).
+> 없으면 psql(`installer/db_init.sql`) 또는 안내로 폴백.
+
 ## Quickstart
 ```bash
 # 테스트 (154 passed)

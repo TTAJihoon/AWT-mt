@@ -1,0 +1,19 @@
+# AWT 인증용 PostgreSQL — 원클릭 DB (네이티브 설치 없이)
+# 사용: docker compose -f installer/docker-compose.auth.yml up -d
+# .env.example 기본값(awt_user/changeme/awt, localhost:5432)과 일치한다.
+services:
+  awt-postgres:
+    image: postgres:16-alpine
+    container_name: awt-auth-db
+    environment:
+      POSTGRES_USER: awt_user
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: awt
+    ports:
+      - "5432:5432"
+    volumes:
+      - awt_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  awt_pgdata:
