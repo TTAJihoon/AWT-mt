@@ -132,9 +132,25 @@ class LoginWindow(QDialog):
         )
         self._login_btn.clicked.connect(self._do_login)
         f_lay.addWidget(self._login_btn)
+
+        # DB 접속 설정(호스트/방화벽 변경 시 재설정)
+        self._db_btn = QPushButton("DB 설정")
+        self._db_btn.setStyleSheet(
+            "QPushButton { background: transparent; color: #64748b; border: none;"
+            " font-size: 12px; } QPushButton:hover { color: #334155; }")
+        self._db_btn.clicked.connect(self._open_db_settings)
+        f_lay.addWidget(self._db_btn)
         card_lay.addWidget(form)
 
         root.addWidget(card)
+
+    def _open_db_settings(self) -> None:
+        from app.ui.db_settings_dialog import DbSettingsDialog
+        if DbSettingsDialog(self).exec() == QDialog.Accepted:
+            self._db = DBClient()        # 새 설정 반영(from_env)
+            self._login_btn.setEnabled(True)
+            self._status_lbl.setText("DB 설정이 갱신되었습니다.")
+            self._check_db_available()
 
     def _check_db_available(self) -> None:
         # DB 불가여도 버튼은 유지 — 특별 관리자 계정은 DB 없이 로그인 가능해야 함.

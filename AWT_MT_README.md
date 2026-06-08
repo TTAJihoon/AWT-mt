@@ -42,17 +42,18 @@ Stage 0 Probe(플러그인) → 1 Ingest → 1b Consolidate → 2 TC설계(LLM) 
 - **증적**(`EvidenceCollector`) + **보고서**(`report_summary.py`: 등급요약·실패상세·수동확인·종합의견).
 - **API 키 입력 UI**: 새 실행 시 `ApiKeyDialog` 자동 노출(또는 대시보드 설정 탭). Fernet 암호화 저장.
 
-## 설치 (다른 PC 원클릭)
-새 Windows PC에서:
-1. 이 폴더를 복사(또는 `git clone https://github.com/TTAJihoon/AWT-mt`).
-2. **`setup.bat` 더블클릭** (또는 `powershell -ExecutionPolicy Bypass -File setup.ps1`)
-   → Python(.venv)+의존성 → `.env` 준비 → **인증 DB(Docker 우선, 없으면 psql)** → 스키마+관리자 계정 → 스모크 테스트.
-3. **`run.bat` 더블클릭**으로 앱 실행.
+## 배포/설치 (클라이언트 .exe + 중앙 DB)
+**중앙 DB(PostgreSQL)는 서버에서 가동**하고, 다른 PC에는 **클라이언트 실행파일만** 배포한다.
+1. (배포 측, 1회) 빌드 머신에서 `.\installer\build.ps1` → `installer/output/AWT_Setup.exe` 생성·배포
+   (Python 불필요한 단일 패키지 — `installer/PACKAGING.md`).
+2. (사용자 PC) `AWT_Setup.exe` 실행으로 설치 → 앱 실행.
+3. **첫 실행 시 ‘중앙 DB 접속 설정’ 창**에 host/port(+DB 계정) 입력 — **현재값이 미리 채워져 있고 수정 가능**.
+   (로그인 창의 "DB 설정"으로 언제든 재설정)
+4. **로그인 창에서 ID/PW** 입력.
+   - 방화벽 등으로 DB 접속이 막혀도 **특별 관리자 계정 `jh91082`** 으로는 **DB 없이 로그인** 가능(break-glass, admin).
 
-옵션: `setup.bat -Full`(playwright + .NET/Java/GUI 브리지까지) · `-SkipDb` · `-NoVenv` ·
-`-AdminUser admin -AdminPass ****`(비대화식 관리자 생성).
-> Docker Desktop이 있으면 PostgreSQL을 컨테이너로 자동 기동(네이티브 설치 불필요).
-> 없으면 psql(`installer/db_init.sql`) 또는 안내로 폴백.
+> 개발/소스 실행 또는 **중앙 DB 서버를 새로 세울 때**는 `setup.bat`(venv+의존성) /
+> `installer/docker-compose.auth.yml`(PostgreSQL 컨테이너) / `installer/db_init.sql` 사용.
 
 ## Quickstart
 ```bash

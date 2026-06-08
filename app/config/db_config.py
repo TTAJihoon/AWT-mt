@@ -26,13 +26,20 @@ class DBConfig:
 
     @classmethod
     def from_env(cls) -> "DBConfig":
-        return cls(
-            host=os.getenv("AWT_DB_HOST", "localhost"),
-            port=int(os.getenv("AWT_DB_PORT", "5432")),
-            dbname=os.getenv("AWT_DB_NAME", "awt"),
-            user=os.getenv("AWT_DB_USER", "awt_user"),
-            password=os.getenv("AWT_DB_PASSWORD", ""),
-        )
+        # 우선순위: UI 저장 설정 > 환경변수 > 기본값 (settings.effective_db_settings)
+        try:
+            from app.config.settings import effective_db_settings
+            s = effective_db_settings()
+            return cls(host=s["host"], port=int(s["port"]), dbname=s["dbname"],
+                       user=s["user"], password=s["password"])
+        except Exception:
+            return cls(
+                host=os.getenv("AWT_DB_HOST", "localhost"),
+                port=int(os.getenv("AWT_DB_PORT", "5432")),
+                dbname=os.getenv("AWT_DB_NAME", "awt"),
+                user=os.getenv("AWT_DB_USER", "awt_user"),
+                password=os.getenv("AWT_DB_PASSWORD", ""),
+            )
 
     def dsn(self) -> str:
         return (

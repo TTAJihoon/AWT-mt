@@ -186,3 +186,47 @@ def delete_api_key(provider: str | None = None) -> None:
     _save_payload(data)
     # 환경변수에서도 제거
     os.environ.pop(_ENV_KEY_VAR.get(provider, ""), None)
+
+
+# ── 중앙 DB 접속 설정 (클라이언트 첫 실행 입력, D44/D59) ─────────────────────
+# 분산 .exe 클라이언트가 중앙 PostgreSQL에 접속하기 위한 설정.
+# 우선순위: UI 저장(암호화 파일) > 환경변수(.env) > 기본값.
+_DB_FIELDS = ("host", "port", "dbname", "user", "password")
+_DB_DEFAULTS = {"host": "localhost", "port": 5432, "dbname": "awt",
+                "user": "awt_user", "password": ""}
+
+
+def get_db_settings() -> dict:
+    """저장된 DB 접속 설정(없으면 빈 dict)."""
+    return dict(_load_payload().get("db_settings") or {})
+
+
+def save_db_settings(settings: dict) -> None:
+    """DB 접속 설정 저장(머신 고유값 Fernet 암호화)."""
+    data = _load_payload()
+    cur = dict(data.get("db_settings") or {})
+    for k in _DB_FIELDS:
+        if k in settings:
+            cur[k] = settings[k]
+    data["db_settings"] = cur
+    _save_payload(data)
+
+
+def has_db_settings() -> bool:
+    """첫 실행 여부 판단 — host가 저장돼 있으면 설정 완료로 본다."""
+    return bool((_load_payload().get("db_settings") or {}).get("host"))
+
+
+def effective_db_settings() -> dict:
+    """저장값 > 환경변수 > 기본값 병합한 최종 접속 설정."""
+    merged = dict(_DB_DEFAULTS)
+    merged["host"] = os.getenv("AWT_DB_HOST", merged["host"])
+    merged["port"] = int(os.getenv("AWT_DB_PORT", merged["port"]))
+    merged["dbname"] = os.getenv("AWT_DB_NAME", merged["dbname"])
+    merged["user"] = os.getenv("AWT_DB_USER", merged["user"])
+    merged["password"] = os.getenv("AWT_DB_PASSWORD", merged["password"])
+    for k, v in get_db_settings().items():
+        if k in _DB_FIELDS and v != "":
+            merged[k] = v
+    merged["port"] = int(merged["port"])
+    return merged

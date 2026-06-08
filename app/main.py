@@ -24,7 +24,13 @@ def main() -> None:
     app.setStyle("Fusion")
     app.setStyleSheet(APPLE_QSS)
 
-    # DB 설정
+    # 첫 실행: 중앙 DB 접속 설정 입력(현재값 pre-fill). 취소해도 특별 관리자 계정으로 진입 가능.
+    from app.config.settings import has_db_settings
+    from app.ui.db_settings_dialog import DbSettingsDialog
+    if not has_db_settings():
+        DbSettingsDialog().exec()
+
+    # DB 설정 (저장값 > 환경변수 > 기본값)
     db_cfg = DBConfig.from_env()
     db = DBClient(db_cfg)
 
