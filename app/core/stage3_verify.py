@@ -191,8 +191,9 @@ def _add_v10_tcs(
 ) -> list[dict]:
     """V10 커버리지 부족 leaf에 누락 카테고리 TC를 추가 생성.
 
-    TC_REGEN 대신 TC_DESIGN을 재호출해 누락 카테고리만 타깃으로 새 TC를 만든다.
-    기존 TC와 ID 충돌 방지를 위해 leaf별 최대 번호 + 1로 시작.
+    TC_REGEN이 아니라 TC_V10_GROUP(D56 그룹 보완)을 호출해 누락 카테고리만 타깃으로
+    새 TC를 만든다(페이지/도메인 단위 그룹 배치). 기존 TC와 ID 충돌 방지를 위해
+    leaf별 최대 번호 + 1로 시작.
     """
     # lazy imports — stage2 유틸 재사용, 순환 의존 방지
     import concurrent.futures as _cf

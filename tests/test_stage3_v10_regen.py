@@ -218,9 +218,9 @@ class TestV10StructuredFields:
         regen_calls = [c for c in llm.call.call_args_list if c[0][0] == "TC_REGEN"]
         assert len(regen_calls) == 0, f"TC_REGEN이 잘못 호출됨: {regen_calls}"
 
-        # TC_DESIGN이 1회 호출됨 (V10 보완)
-        design_calls = [c for c in llm.call.call_args_list if c[0][0] == "TC_DESIGN"]
-        assert len(design_calls) == 1
+        # V10 보완은 TC_V10_GROUP을 1회 호출 (D56 그룹 보완 — 과거 per-leaf TC_DESIGN에서 변경)
+        v10_calls = [c for c in llm.call.call_args_list if c[0][0] == "TC_V10_GROUP"]
+        assert len(v10_calls) == 1
 
         # 새 TC가 추가됨 (원래 2개 → 3개)
         assert len(result) > original_count
