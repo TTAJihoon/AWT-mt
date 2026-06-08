@@ -307,28 +307,45 @@ class RunWizard(QDialog):
         root.addLayout(btn_row)
 
     def _page1(self) -> QWidget:
-        """대상 URL + 입력 파일."""
+        """대상 유형 선택 + 유형별 입력 + 요구사항 파일 (D59·D67)."""
         w = QWidget()
         lay = QVBoxLayout(w)
         lay.setSpacing(12)
 
-        lay.addWidget(QLabel("<b>Step 1: 대상 URL과 요구사항 파일</b>"))
+        lay.addWidget(QLabel("<b>Step 1: 시험 대상 선택 및 입력</b>"))
 
-        url_box = QGroupBox("대상 웹 URL")
-        url_box.setToolTip(
+        # ── 대상 유형 선택 (D59) ──────────────────────────────────────────
+        kind_box = QGroupBox("시험 대상 유형")
+        kind_lay = QVBoxLayout(kind_box)
+        self._target_kind_combo = QComboBox()
+        self._target_kind_combo.addItem("웹 (DOM/Playwright)", "web")
+        self._target_kind_combo.addItem("REST API (OpenAPI)", "api_rest")
+        self._target_kind_combo.addItem("로컬 코드 라이브러리", "api_code")
+        self._target_kind_combo.addItem("Windows 실행프로그램 (UIA)", "gui")
+        self._target_kind_combo.currentIndexChanged.connect(self._on_target_kind_changed)
+        kind_lay.addWidget(self._target_kind_combo)
+        lay.addWidget(kind_box)
+
+        # ── 유형별 입력 스택 ──────────────────────────────────────────────
+        self._target_stack = self._build_target_pages()
+        lay.addWidget(self._target_stack)
+
+        # ── 웹 URL (web 전용 — 다른 유형이면 숨김) ─────────────────────────
+        self._url_box = QGroupBox("대상 웹 URL")
+        self._url_box.setToolTip(
             "AI가 자동으로 분석할 웹사이트의 시작 URL입니다.\n"
             "  • 같은 origin(스킴+호스트)의 페이지를 BFS로 따라가며 분석\n"
             "  • 로그인 후 접근 가능한 페이지가 있으면 Step 2에서 인증 설정\n\n"
             "예: http://localhost:8080  ·  https://demo.example.com/app"
         )
-        url_lay = QVBoxLayout(url_box)
+        url_lay = QVBoxLayout(self._url_box)
         self._url_edit = QLineEdit()
         self._url_edit.setPlaceholderText("https://example.com")
-        self._url_edit.setToolTip(url_box.toolTip())
+        self._url_edit.setToolTip(self._url_box.toolTip())
         url_lay.addWidget(self._url_edit)
-        lay.addWidget(url_box)
+        lay.addWidget(self._url_box)
 
-        file_box = QGroupBox("요구사항 파일 (PDF / DOCX / XLSX / MD, 복수 선택 가능)")
+        file_box = QGroupBox("요구사항 파일/매뉴얼/스펙 (PDF / DOCX / XLSX / MD, 복수 선택 가능)")
         file_lay = QVBoxLayout(file_box)
         self._file_list = QListWidget()
         self._file_list.setFixedHeight(120)
@@ -344,10 +361,114 @@ class RunWizard(QDialog):
         file_lay.addLayout(btn_row)
         lay.addWidget(file_box)
 
-        self._skip_stage0_cb = QCheckBox("Stage 0 DOM 스캔 건너뜀 (파일만 사용)")
+        self._skip_stage0_cb = QCheckBox("Stage 0 스캔 건너뜀 (파일/스펙만 사용)")
         lay.addWidget(self._skip_stage0_cb)
         lay.addStretch()
         return w
+
+    # ── 유형별 입력 스택 (D59) ────────────────────────────────────────────
+    def _build_target_pages(self) -> QStackedWidget:
+        stack = QStackedWidget()
+
+        # 0: web — 안내만 (실제 입력은 아래 URL/파일 박스)
+        web = QWidget(); wl = QVBoxLayout(web)
+        wl.addWidget(QLabel("아래 ‘대상 웹 URL’과 파일을 입력하세요."))
+        wl.addStretch(); stack.addWidget(web)
+
+        # 1: api_rest
+        rest = QGroupBox("REST API (OpenAPI) 입력"); rl = QVBoxLayout(rest)
+        self._rest_openapi = QLineEdit(); self._rest_openapi.setPlaceholderText(
+            "OpenAPI 스펙 경로 또는 URL (openapi.json / .yaml)")
+        self._rest_base = QLineEdit(); self._rest_base.setPlaceholderText(
+            "base_url (예: https://api.example.com)  — 비우면 스펙 servers 사용")
+        self._rest_token = QLineEdit(); self._rest_token.setPlaceholderText(
+            "Bearer 토큰 (선택)")
+        for lb, ed in (("OpenAPI 스펙", self._rest_openapi),
+                       ("Base URL", self._rest_base),
+                       ("인증 토큰(Bearer, 선택)", self._rest_token)):
+            rl.addWidget(QLabel(lb)); rl.addWidget(ed)
+        rl.addStretch(); stack.addWidget(rest)
+
+        # 2: api_code
+        code = QGroupBox("로컬 코드 라이브러리 입력"); cl = QVBoxLayout(code)
+        self._code_lang = QComboBox()
+        for label, data in (("Python", "python"), (".NET (C#)", "dotnet"),
+                            ("Java", "java"), ("C/네이티브 DLL", "c")):
+            self._code_lang.addItem(label, data)
+        self._code_module = QLineEdit(); self._code_module.setPlaceholderText(
+            "모듈 경로(.py) / DLL 경로 / classpath(.jar)")
+        self._code_extra = QLineEdit(); self._code_extra.setPlaceholderText(
+            "Java=클래스 FQN(콤마 구분) / C=시그니처 JSON 경로")
+        cl.addWidget(QLabel("언어")); cl.addWidget(self._code_lang)
+        cl.addWidget(QLabel("모듈/DLL/classpath 경로")); cl.addWidget(self._code_module)
+        cl.addWidget(QLabel("추가(Java 클래스 / C 시그니처)")); cl.addWidget(self._code_extra)
+        cl.addStretch(); stack.addWidget(code)
+
+        # 3: gui
+        gui = QGroupBox("Windows 실행프로그램 입력"); gl = QVBoxLayout(gui)
+        self._gui_exe = QLineEdit(); self._gui_exe.setPlaceholderText("실행 파일 경로 (.exe)")
+        self._gui_args = QLineEdit(); self._gui_args.setPlaceholderText("실행 인자 (공백 구분, 선택)")
+        self._gui_window = QLineEdit(); self._gui_window.setPlaceholderText(
+            "메인 윈도우 제목 정규식 (선택)")
+        for lb, ed in (("실행 파일", self._gui_exe), ("실행 인자", self._gui_args),
+                       ("윈도우 제목", self._gui_window)):
+            gl.addWidget(QLabel(lb)); gl.addWidget(ed)
+        gl.addStretch(); stack.addWidget(gui)
+
+        stack.setCurrentIndex(0)
+        return stack
+
+    def _on_target_kind_changed(self, idx: int) -> None:
+        self._target_stack.setCurrentIndex(idx)
+        # web(0)만 URL 박스 노출
+        if hasattr(self, "_url_box"):
+            self._url_box.setVisible(idx == 0)
+
+    def _build_target_config(self) -> dict:
+        """현재 선택된 대상 유형의 입력을 target_config dict로."""
+        kind = self._target_kind_combo.currentData()
+        if kind == "api_rest":
+            spec = self._rest_openapi.text().strip()
+            cfg: dict = {}
+            if spec.lower().startswith("http"):
+                cfg["openapi_url"] = spec
+            elif spec:
+                cfg["openapi_path"] = spec
+            base = self._rest_base.text().strip()
+            if base:
+                cfg["base_url"] = base
+            tok = self._rest_token.text().strip()
+            if tok:
+                cfg["auth"] = {"type": "bearer", "token": tok}
+            return cfg
+        if kind == "api_code":
+            lang = self._code_lang.currentData()
+            mod = self._code_module.text().strip()
+            extra = self._code_extra.text().strip()
+            cfg = {"lang": lang}
+            if lang == "python":
+                cfg["module_path"] = mod
+            elif lang == "dotnet":
+                cfg["dll_path"] = mod
+            elif lang == "java":
+                cfg["classpath"] = mod
+                if extra:
+                    cfg["classes"] = [c.strip() for c in extra.split(",") if c.strip()]
+            elif lang == "c":
+                cfg["dll_path"] = mod
+                if extra:
+                    cfg["signatures_path"] = extra
+            return cfg
+        if kind == "gui":
+            cfg = {"exe_path": self._gui_exe.text().strip()}
+            args = self._gui_args.text().strip()
+            if args:
+                cfg["args"] = args.split()
+            wt = self._gui_window.text().strip()
+            if wt:
+                cfg["window_title"] = wt
+            return cfg
+        return {}
 
     def _page2(self) -> QWidget:
         """인증 시퀀스 설정."""
@@ -681,18 +802,42 @@ class RunWizard(QDialog):
         self._step_lbl.setText(f"Step {idx} / 3")
 
     def _validate_page1(self) -> bool:
-        url = self._url_edit.text().strip()
-        if not url.startswith(("http://", "https://")):
-            QMessageBox.warning(self, "입력 오류", "유효한 URL을 입력하세요 (http:// 또는 https://).")
-            return False
-        if self._file_list.count() == 0 and not self._skip_stage0_cb.isChecked():
-            res = QMessageBox.question(
-                self, "확인",
-                "입력 파일이 없습니다. Stage 0 DOM 스캔만으로 진행하시겠습니까?",
-                QMessageBox.Yes | QMessageBox.No,
-            )
-            if res == QMessageBox.No:
+        kind = self._target_kind_combo.currentData()
+        if kind == "web":
+            url = self._url_edit.text().strip()
+            if not url.startswith(("http://", "https://")):
+                QMessageBox.warning(self, "입력 오류", "유효한 URL을 입력하세요 (http:// 또는 https://).")
                 return False
+            if self._file_list.count() == 0 and not self._skip_stage0_cb.isChecked():
+                res = QMessageBox.question(
+                    self, "확인",
+                    "입력 파일이 없습니다. Stage 0 DOM 스캔만으로 진행하시겠습니까?",
+                    QMessageBox.Yes | QMessageBox.No,
+                )
+                if res == QMessageBox.No:
+                    return False
+            return True
+        if kind == "api_rest":
+            if not (self._rest_openapi.text().strip()):
+                QMessageBox.warning(self, "입력 필요", "OpenAPI 스펙 경로 또는 URL을 입력하세요.")
+                return False
+            return True
+        if kind == "api_code":
+            if not self._code_module.text().strip():
+                QMessageBox.warning(self, "입력 필요", "모듈/DLL/classpath 경로를 입력하세요.")
+                return False
+            if self._code_lang.currentData() == "java" and not self._code_extra.text().strip():
+                QMessageBox.warning(self, "입력 필요", "Java는 추가 칸에 클래스 FQN(콤마)을 입력하세요.")
+                return False
+            if self._code_lang.currentData() == "c" and not self._code_extra.text().strip():
+                QMessageBox.warning(self, "입력 필요", "C는 추가 칸에 시그니처 JSON 경로를 입력하세요.")
+                return False
+            return True
+        if kind == "gui":
+            if not self._gui_exe.text().strip():
+                QMessageBox.warning(self, "입력 필요", "실행 파일(.exe) 경로를 입력하세요.")
+                return False
+            return True
         return True
 
     def _collect_auth(self) -> None:
@@ -753,6 +898,8 @@ class RunWizard(QDialog):
             slow_mo_ms=self._slowmo_spin.value() if self._headless_cb.isChecked() else 0,
             feature_gate=self._feature_gate_cb.isChecked(),   # D53
             auto_pages=self._auto_pages_cb.isChecked(),       # 원클릭 자동 진행
+            target_kind=self._target_kind_combo.currentData(),    # D59 — 대상 유형
+            target_config=self._build_target_config(),            # 유형별 입력
         )
         self.run_config_ready.emit(config)
         self.accept()
