@@ -169,13 +169,23 @@ class TargetAdapter:
 
 ## 8. 구현 단계 (Phase)
 
-| # | 범위 | 산출 |
+| # | 범위 | 상태 |
 |---|---|---|
-| P0 | 어댑터 골격(base/registry) + web 래핑(회귀 0) + 스키마 확장 + orchestrator 분기 | 추상화 검증 |
-| P1 | **api_rest** end-to-end (Probe/Executor/Oracle, mock 가능) | REST 시험 동작 |
-| P2 | **api_code: python** end-to-end | 로컬 라이브러리(파이썬) |
-| P3 | api_code: dotnet/java/c 러너 | 4언어 완성 |
-| P4 | **gui** Probe/Executor/Oracle + EvidenceCollector | Windows GUI 시험 |
-| P5 | Wizard 분기 UI + Report 확장 | 사용자 완성 |
+| P0 | 어댑터 골격(base/registry) + web 래핑(회귀 0) + 스키마 확장 + orchestrator 분기 | ✅ |
+| P1 | **api_rest** end-to-end (Probe/Executor/Oracle, mock 가능) | ✅ |
+| P2 | **api_code: python** end-to-end | ✅ |
+| P3 | api_code: dotnet/java/c 러너 | ✅ |
+| P4 | **gui** Probe/Executor/Oracle + EvidenceCollector | ✅ |
+| P5 | Wizard 분기 UI + Report 확장 | ✅ |
+| P5b | Wizard 시각 폼(offscreen 검증) | ✅ |
 
-각 Phase는 기존 코어를 재사용하며 독립적으로 동작 가능. P0→P1 순으로 즉시 가치.
+### 8.1 확장 완료 항목 (P5 이후)
+- **풀 파이프라인 통합**: orchestrator LLM 주입 + Stage 5 전 `_enrich_test_data`(LLM test_data 보강, 폴백 안전) + 비웹 playwright 비의존화. `scripts/demo_full_pipeline.py`로 Stage 0→7 풀런 검증(실 산출물).
+- **API-aware TC 설계**: `prompts/tc_design_api.md`(TC_DESIGN_API), Stage 2가 비웹에서 자동 선택.
+- **매뉴얼-무의존 값 합성**(`value_synth`) + **LLM test_data**(`llm_test_data`).
+- **API 키 입력 다이얼로그**(`app/ui/api_key_dialog.py`) + 위저드 연결.
+- **패키징**: `installer/awt.spec`(자산·어댑터·httpx 반영) + `installer/PACKAGING.md`.
+- **라이브 타깃 일습**: `examples/live-targets/`(.NET/Java/C/GUI 샘플 + run_live).
+- **품질**: 전체 테스트 154 passed / 0 failed (과거 stale 실패 1건 정정 포함).
+
+각 Phase는 기존 코어를 재사용하며 독립적으로 동작 가능.
