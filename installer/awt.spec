@@ -11,8 +11,10 @@ a = Analysis(
     pathex=[str(ROOT)],
     binaries=[],
     datas=[
-        # 프롬프트 파일
+        # 프롬프트 파일 (tc_design_api.md·tc_testdata.md 포함)
         (str(ROOT / "prompts"), "prompts"),
+        # 자산: 도메인 불변규칙(YAML) + 결함 카탈로그(JSON) — 런타임 로더가 읽음
+        (str(ROOT / "data" / "assets"), "data/assets"),
         # Playwright 브라우저 번들은 playwright install 후 자동 포함
     ],
     hiddenimports=[
@@ -20,12 +22,29 @@ a = Analysis(
         "PySide6.QtGui",
         "PySide6.QtWidgets",
         "anthropic",
+        "openai",
         "psycopg2",
         "playwright.sync_api",
+        "httpx",                 # api_rest 어댑터 (D61)
         "openpyxl",
         "fitz",          # PyMuPDF
         "docx",          # python-docx
         "cryptography.fernet",
+        # 대상 어댑터 — registry에 동적 등록되므로 명시 (D59~D63)
+        "app.adapters.web_adapter",
+        "app.adapters.api_rest_adapter",
+        "app.adapters.api_code_adapter",
+        "app.adapters.gui_adapter",
+        "app.adapters.api_code.python_runner",
+        "app.adapters.api_code.c_runner",
+        "app.adapters.api_code.dotnet_runner",
+        "app.adapters.api_code.java_runner",
+        "app.adapters.value_synth",
+        "app.adapters.llm_test_data",
+        "app.adapters.report_summary",
+        "app.ui.api_key_dialog",
+        # 선택 의존(pythonnet/jpype/uiautomation/pywinauto)은 번들 안 함 —
+        # 어댑터가 lazy import + 안내 예외로 graceful 처리. 필요 시 빌드 환경에 설치.
     ],
     hookspath=[],
     hooksconfig={},
