@@ -140,13 +140,14 @@ def main() -> None:
         # 설정 탭에서 키를 저장한 경우를 위해 항상 최신값 로드
         current_key = load_api_key() or api_key
         if not current_key or current_key.startswith("AIza여기에") or current_key.startswith("sk-ant-여기에") or current_key.startswith("sk-여기에"):
-            from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(
-                dash, "API Key 미설정",
-                "LLM API Key가 설정되지 않았습니다.\n"
-                "대시보드 → 설정 탭에서 API Key를 먼저 저장해주세요."
-            )
-            return
+            # 키 미설정 → 바로 입력 다이얼로그 (설정 탭까지 가지 않아도 됨)
+            from PySide6.QtWidgets import QDialog
+            from app.ui.api_key_dialog import ApiKeyDialog
+            if ApiKeyDialog(parent=dash).exec() != QDialog.Accepted:
+                return
+            current_key = load_api_key() or ""
+            if not current_key:
+                return
         wiz = RunWizard(api_key=current_key, parent=dash)
         wiz.run_config_ready.connect(_start_pipeline)
         wiz.exec()
