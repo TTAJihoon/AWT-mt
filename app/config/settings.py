@@ -213,8 +213,14 @@ def save_db_settings(settings: dict) -> None:
 
 
 def has_db_settings() -> bool:
-    """첫 실행 여부 판단 — host가 저장돼 있으면 설정 완료로 본다."""
-    return bool((_load_payload().get("db_settings") or {}).get("host"))
+    """첫 실행 여부 판단 — DB host가 어디든 설정돼 있으면 완료로 본다.
+
+    설치 마법사(awt_setup.iss)가 .env에 AWT_DB_HOST를 기록하면 인앱 첫 실행
+    다이얼로그를 띄우지 않도록, 암호화 저장값 또는 환경변수 중 하나만 있어도 True.
+    """
+    if (_load_payload().get("db_settings") or {}).get("host"):
+        return True
+    return bool(os.getenv("AWT_DB_HOST", "").strip())
 
 
 def effective_db_settings() -> dict:
