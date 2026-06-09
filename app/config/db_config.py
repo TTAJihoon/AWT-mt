@@ -41,10 +41,16 @@ class DBConfig:
                 password=os.getenv("AWT_DB_PASSWORD", ""),
             )
 
+    # 한국어 Windows PostgreSQL은 오류 메시지를 CP949로 보내 psycopg2가 UTF-8
+    # 디코딩에 실패(UnicodeDecodeError)한다. lc_messages=C로 영어 메시지를 받아
+    # 진짜 원인(인증 실패/DB 없음 등)이 보이게 한다.
+    _OPTIONS = "-c lc_messages=C"
+
     def dsn(self) -> str:
         return (
             f"host={self.host} port={self.port} dbname={self.dbname} "
-            f"user={self.user} password={self.password}"
+            f"user={self.user} password={self.password} "
+            f"client_encoding=UTF8 options='{self._OPTIONS}'"
         )
 
     def connect_kwargs(self) -> dict:
@@ -55,4 +61,5 @@ class DBConfig:
             "user": self.user,
             "password": self.password,
             "client_encoding": "UTF8",
+            "options": self._OPTIONS,
         }

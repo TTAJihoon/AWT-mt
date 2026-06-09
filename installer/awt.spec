@@ -49,7 +49,23 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["tkinter", "matplotlib", "scipy", "numpy"],
+    excludes=[
+        "tkinter", "matplotlib", "scipy", "numpy",
+        # QtWebEngine 스택 제외 — 용량·빌드시간의 주범(~수백 MB).
+        # 웹 셀렉터 피커(보조 기능)만 비활성화되며 _HAS_WEBENGINE 가드로 안전.
+        "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.QtWebEngine",
+        "PySide6.QtWebChannel", "PySide6.QtWebSockets",
+        # 사용하지 않는 무거운 Qt 모듈
+        "PySide6.QtQuick", "PySide6.QtQml", "PySide6.QtQuickWidgets", "PySide6.QtQuick3D",
+        "PySide6.QtQuickControls2", "PySide6.QtPositioning",
+        "PySide6.QtMultimedia", "PySide6.QtMultimediaWidgets",
+        "PySide6.QtOpenGL", "PySide6.QtOpenGLWidgets",
+        "PySide6.QtPdf", "PySide6.QtPdfWidgets",
+        "PySide6.QtCharts", "PySide6.QtDataVisualization",
+        "PySide6.Qt3DCore", "PySide6.Qt3DRender", "PySide6.QtSensors",
+        "PySide6.QtSerialPort", "PySide6.QtBluetooth", "PySide6.QtNfc",
+        "PySide6.QtTest", "PySide6.QtDesigner",
+    ],
     noarchive=False,
 )
 

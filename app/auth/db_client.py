@@ -64,7 +64,25 @@ class DBClient:
 
     # ── 연결 ─────────────────────────────────────────────────────────────
     def connect(self) -> None:
-        self._conn = psycopg2.connect(**self._cfg.connect_kwargs())
+        try:
+            self._conn = psycopg2.connect(**self._cfg.connect_kwargs())
+        except UnicodeDecodeError as e:
+            # 한국어 Windows PostgreSQL 오류 메시지(CP949)를 psycopg2가 UTF-8로
+            # 디코딩하다 실패한 경우 — 원본 바이트를 CP949로 풀어 진짜 원인을 보여준다.
+            detail = ""
+            raw = getattr(e, "object", b"") or b""
+            for enc in ("cp949", "euc-kr", "latin-1"):
+                try:
+                    detail = raw.decode(enc).strip()
+                    break
+                except Exception:
+                    pass
+            raise RuntimeError(
+                "DB 접속 실패 — 호스트/포트/DB이름/계정/비밀번호를 확인하세요.\n"
+                + (f"서버 메시지: {detail}\n" if detail else "")
+                + "참고: DB 비밀번호는 PostgreSQL 'awt_user' 역할의 비밀번호이며, "
+                "앱 로그인 ID/PW와 다릅니다."
+            ) from e
         self._conn.autocommit = False
 
     def close(self) -> None:
