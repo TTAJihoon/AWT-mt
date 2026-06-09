@@ -1,7 +1,9 @@
-# AWT 빌드 스크립트 (PowerShell) — PyInstaller → Inno Setup
-# 사용법: .\installer\build.ps1
+﻿# AWT 빌드 스크립트 (PowerShell) — PyInstaller → Inno Setup
+# 사용법: installer\build.bat 더블클릭 (또는 우클릭 → PowerShell에서 실행)
 
 $ErrorActionPreference = "Stop"
+# 콘솔 UTF-8 출력(한글 깨짐 방지)
+try { $OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $Root = Split-Path $PSScriptRoot -Parent
 
 Write-Host "=== AWT Build ===" -ForegroundColor Cyan
