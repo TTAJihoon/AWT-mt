@@ -1,0 +1,4 @@
+# Windows 스크립트는 CRLF 줄바꿈 보장 (cmd/PowerShell 호환 — LF면 cmd가 줄을 잘못 쪼갬)
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
