@@ -6,10 +6,21 @@ from pathlib import Path
 
 ROOT = Path(SPECPATH).parent
 
+# Visual C++ 런타임 DLL 번들 — VC++ 재배포패키지가 없는 깨끗한 PC에서도
+# Qt(PySide6)가 로드되도록 함께 포함. (없으면 'msvcp140.dll 없음'으로 실행 실패)
+import os as _os
+_sys32 = _os.path.join(_os.environ.get("SystemRoot", r"C:\Windows"), "System32")
+_crt_binaries = []
+for _n in ("msvcp140.dll", "msvcp140_1.dll", "vcruntime140.dll",
+           "vcruntime140_1.dll", "concrt140.dll"):
+    _p = _os.path.join(_sys32, _n)
+    if _os.path.exists(_p):
+        _crt_binaries.append((_p, "."))
+
 a = Analysis(
     [str(ROOT / "app" / "main.py")],
     pathex=[str(ROOT)],
-    binaries=[],
+    binaries=_crt_binaries,
     datas=[
         # 프롬프트 파일 (tc_design_api.md·tc_testdata.md 포함)
         (str(ROOT / "prompts"), "prompts"),
