@@ -31,11 +31,24 @@ def _load_spec(target_config: dict) -> dict:
     path = target_config.get("openapi_path")
     url = target_config.get("openapi_url")
     if path:
-        text = Path(path).read_text(encoding="utf-8")
+        try:
+            text = Path(path).read_text(encoding="utf-8")
+        except Exception as e:
+            raise RuntimeError(
+                f"OpenAPI 스펙 파일을 읽지 못했습니다: {path}\n  원인: {e}"
+            ) from e
     elif url:
-        resp = httpx.get(url, timeout=30.0)
-        resp.raise_for_status()
-        text = resp.text
+        try:
+            resp = httpx.get(url, timeout=30.0)
+            resp.raise_for_status()
+            text = resp.text
+        except Exception as e:
+            raise RuntimeError(
+                f"OpenAPI 스펙을 불러오지 못했습니다 (연결 실패): {url}\n"
+                f"  원인: {type(e).__name__}: {str(e).splitlines()[0][:160]}\n"
+                f"  확인하세요 → ① 대상 API 서버가 실행 중인가? "
+                f"② 주소/포트가 맞는가? ③ http/https 구분(로컬 샘플 서버는 http)."
+            ) from e
     else:
         raise ValueError("api_rest: target_config에 openapi_path 또는 openapi_url 필요")
     text = text.strip()
