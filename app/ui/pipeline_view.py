@@ -122,6 +122,10 @@ class _PreGateWorker(QThread):
             if not self._resume_from_stage2:
                 feature_spec = None
                 has_url = bool(self._orch.config.target_url)
+                # 비웹 대상(REST/코드라이브러리/GUI)은 target_url이 없고 정보가
+                # target_config에 있다 → URL 유무와 무관하게 어댑터 probe(Stage 0)를 실행.
+                target_kind = getattr(self._orch.config, "target_kind", "web") or "web"
+                is_nonweb = target_kind in ("api_rest", "api_code", "gui")
 
                 # Stage 0 실행 조건:
                 # 1) 매뉴얼 파일 없이 URL만 있을 때 (원래 동작)
@@ -130,7 +134,13 @@ class _PreGateWorker(QThread):
                 should_run_stage0 = has_url and not self._reuse_stage0 and not self._orch.has_stage0_draft()
                 should_reuse_stage0 = has_url and self._reuse_stage0
 
-                if should_reuse_stage0:
+                if is_nonweb:
+                    # 어댑터 probe로 대상 구조 스캔(OpenAPI 파싱·심볼 리플렉션·UIA 등)
+                    feature_spec = self._orch.run_stage0()
+                    if self._orch.is_stopped():
+                        self.stopped.emit([]); return
+                    self.stage_done.emit(1)
+                elif should_reuse_stage0:
                     # 기존 분석 결과 로드 — DOM 재스캔/페이지선택 생략
                     feature_spec = self._orch.load_stage0_draft()
                     if feature_spec is None:
