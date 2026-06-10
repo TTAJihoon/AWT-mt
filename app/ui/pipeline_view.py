@@ -1738,6 +1738,9 @@ class PipelineView(QMainWindow):
                 **prev,
                 "run_id":         cfg.run_id,
                 "target_url":     cfg.target_url,
+                # 비웹 대상 재현 — 다시 열기 시 대상 유형/설정 복원에 필수 (D59)
+                "target_kind":    getattr(cfg, "target_kind", "web") or "web",
+                "target_config":  getattr(cfg, "target_config", {}) or {},
                 "stage":          stage,
                 "updated_at":     now_str,
                 # ── 시험 환경 (재현용) ─────────────────────────────────────
