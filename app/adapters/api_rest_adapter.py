@@ -38,17 +38,32 @@ def _load_spec(target_config: dict) -> dict:
                 f"OpenAPI 스펙 파일을 읽지 못했습니다: {path}\n  원인: {e}"
             ) from e
     elif url:
-        try:
-            resp = httpx.get(url, timeout=30.0)
-            resp.raise_for_status()
-            text = resp.text
-        except Exception as e:
+        # base URL만 입력한 흔한 실수 자동 보정 — 스펙 파일 경로가 아니면
+        # 흔한 스펙 위치(/openapi.json, /v3/api-docs 등)를 차례로 시도한다.
+        candidates = [url]
+        if not re.search(r"\.(json|ya?ml)(\?|$)", url, re.I) and not any(
+            s in url.lower() for s in ("/openapi", "/api-docs", "/swagger")
+        ):
+            b = url.rstrip("/")
+            candidates += [b + "/openapi.json", b + "/v3/api-docs",
+                           b + "/swagger.json", b + "/openapi.yaml"]
+        text, last_err = None, None
+        for cand in candidates:
+            try:
+                resp = httpx.get(cand, timeout=30.0)
+                resp.raise_for_status()
+                text = resp.text
+                break
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+        if text is None:
             raise RuntimeError(
-                f"OpenAPI 스펙을 불러오지 못했습니다 (연결 실패): {url}\n"
-                f"  원인: {type(e).__name__}: {str(e).splitlines()[0][:160]}\n"
-                f"  확인하세요 → ① 대상 API 서버가 실행 중인가? "
-                f"② 주소/포트가 맞는가? ③ http/https 구분(로컬 샘플 서버는 http)."
-            ) from e
+                f"OpenAPI 스펙을 불러오지 못했습니다: {url}\n"
+                f"  원인: {type(last_err).__name__}: {str(last_err).splitlines()[0][:160]}\n"
+                f"  확인 → ① 서버 실행 중? ② 'OpenAPI 스펙' 칸에 base_url이 아니라 "
+                f"스펙 파일 URL을 넣으세요 (예: {url.rstrip('/')}/openapi.json) "
+                f"③ http/https 구분."
+            ) from last_err
     else:
         raise ValueError("api_rest: target_config에 openapi_path 또는 openapi_url 필요")
     text = text.strip()
