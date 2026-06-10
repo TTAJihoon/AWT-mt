@@ -42,15 +42,14 @@ class DBConfig:
             )
 
     # 한국어 Windows PostgreSQL은 오류 메시지를 CP949로 보내 psycopg2가 UTF-8
-    # 디코딩에 실패(UnicodeDecodeError)한다. lc_messages=C로 영어 메시지를 받아
-    # 진짜 원인(인증 실패/DB 없음 등)이 보이게 한다.
-    _OPTIONS = "-c lc_messages=C"
+    # 디코딩에 실패(UnicodeDecodeError)할 수 있다. 이는 db_client.connect()에서
+    # 원본 바이트를 CP949로 디코딩해 처리한다(서버 lc_messages를 건드리지 않음 —
+    # lc_messages는 슈퍼유저만 설정 가능해 일반 계정 연결을 막기 때문).
 
     def dsn(self) -> str:
         return (
             f"host={self.host} port={self.port} dbname={self.dbname} "
-            f"user={self.user} password={self.password} "
-            f"client_encoding=UTF8 options='{self._OPTIONS}'"
+            f"user={self.user} password={self.password} client_encoding=UTF8"
         )
 
     def connect_kwargs(self) -> dict:
@@ -61,5 +60,4 @@ class DBConfig:
             "user": self.user,
             "password": self.password,
             "client_encoding": "UTF8",
-            "options": self._OPTIONS,
         }
