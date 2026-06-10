@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QPushButton, QFileDialog, QListWidget, QListWidgetItem,
     QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QStackedWidget, QWidget, QCheckBox,
-    QMessageBox, QGroupBox, QComboBox,
+    QMessageBox, QGroupBox, QComboBox, QScrollArea,
 )
 
 try:
@@ -261,7 +261,9 @@ class RunWizard(QDialog):
         """
         super().__init__(parent)
         self.setWindowTitle("새 실행 — 설정 마법사")
-        self.setFixedSize(720, 660)
+        # 고정 크기는 내용이 넘칠 때 위젯이 겹친다 → 리사이즈 가능 + 충분한 기본 크기.
+        self.setMinimumSize(720, 560)
+        self.resize(760, 720)
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
         self._api_key = api_key
         self._auth_rows: list[dict] = []
@@ -284,12 +286,12 @@ class RunWizard(QDialog):
         )
         root.addWidget(self._step_lbl)
 
-        # 스택
+        # 스택 — 각 페이지를 스크롤 영역으로 감싸 내용이 넘쳐도 겹치지 않게 함
         self._stack = QStackedWidget()
-        self._stack.addWidget(self._page1())
-        self._stack.addWidget(self._page2())
-        self._stack.addWidget(self._page3())
-        root.addWidget(self._stack)
+        self._stack.addWidget(self._scroll(self._page1()))
+        self._stack.addWidget(self._scroll(self._page2()))
+        self._stack.addWidget(self._scroll(self._page3()))
+        root.addWidget(self._stack, 1)
 
         # 버튼
         btn_row = QHBoxLayout()
@@ -305,6 +307,14 @@ class RunWizard(QDialog):
         btn_row.addWidget(self._back_btn)
         btn_row.addWidget(self._next_btn)
         root.addLayout(btn_row)
+
+    def _scroll(self, inner: QWidget) -> QScrollArea:
+        """페이지를 스크롤 영역으로 감싼다 — 내용이 창보다 길어도 겹치지 않고 스크롤."""
+        sa = QScrollArea()
+        sa.setWidgetResizable(True)
+        sa.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        sa.setWidget(inner)
+        return sa
 
     def _page1(self) -> QWidget:
         """대상 유형 선택 + 유형별 입력 + 요구사항 파일 (D59·D67)."""
